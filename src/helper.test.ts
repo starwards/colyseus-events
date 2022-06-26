@@ -1,47 +1,49 @@
+import { Colyseus } from '.';
+import { EventEmitter2 } from 'eventemitter2';
 import { Schema } from '@colyseus/schema';
-import { getMobxView } from '.';
 import { Test } from 'tape';
-import { json } from 'json-mobx';
 
 /**
  * manage the state we need for a simple test
  * simulate the wiring that colyseus is suppoed to do in a real environment
  */
-export class Fixture<T> {
+export class FakeClientServer<T> {
     /**
      * represents the state of the server room
      */
-    origin: T & Schema;
+    server: T & Schema;
     /**
      * represents the colyseus state of the client
      */
-    private state: T & Schema;
-    /**
-     * the mobx state of the client (result of getMobxView())
-     */
-    mobxState: T;
+    client: T & Schema;
 
     constructor(constructor: new () => T & Schema) {
-        this.origin = new constructor();
-        this.state = new constructor();
-        this.state.decode(this.origin.encodeAll());
-        this.mobxState = getMobxView(this.state);
+        this.server = new constructor();
+        this.client = new constructor();
+        this.client.decode(this.server.encodeAll());
     }
 
     /**
      * update the client after changes are made to the server state
      */
-    updateColyseusState() {
-        this.state.decode(this.origin.encode()); // move changes from origin to state
+    sync() {
+        this.client.decode(this.server.encode());
     }
+}
 
-    /**
-     * update the client and assert that mobx state changed accordingly
-     */
-    updateAndAssert(t: Test) {
-        this.updateColyseusState();
-        const mobxJson = JSON.parse(JSON.stringify(json.save(this.mobxState)));
-        const originJson = this.origin.toJSON();
-        t.deepLooseEqual(mobxJson, originJson); // assert that state and mobx are the same
+export type Event = [Colyseus | undefined, string];
+export class RecordedEvents extends EventEmitter2 {
+    private eventsLog = new Array<[Colyseus, string]>();
+
+    constructor() {
+        super({ wildcard: true });
+        this.on('**', (val: Colyseus, path: string) => this.eventsLog.push([val, path]));
+    }
+    clear() {
+        this.eventsLog.splice(0, this.eventsLog.length);
+    }
+    assertEvents(t: Test, ...events: Event[]) {
+        t.deepEquals(this.eventsLog, events);
+        this.clear();
     }
 }

@@ -1,42 +1,54 @@
 import { ArraySchema, Schema, type } from '@colyseus/schema';
+import { FakeClientServer, RecordedEvents } from './helper.test';
+
 import test from 'tape';
-import { Fixture } from './helper.test';
+import { wireEvents } from '.';
 
 export class ShallowArrayState extends Schema {
     @type(['uint8']) public numbersArray = new ArraySchema<number>();
 }
 
 test('ShallowArrayState add field', (t) => {
-    t.plan(2);
-    const fixture = new Fixture(ShallowArrayState);
+    t.plan(1);
+    const fixture = new FakeClientServer(ShallowArrayState);
+    fixture.sync();
+    const events = wireEvents(fixture.client, new RecordedEvents(), 'state');
 
-    fixture.origin.numbersArray[0] = 0;
-    fixture.updateAndAssert(t);
+    fixture.server.numbersArray[0] = 0;
+    fixture.sync();
 
-    fixture.origin.numbersArray[1] = 1;
-    fixture.updateAndAssert(t);
+    fixture.server.numbersArray[1] = 1;
+    fixture.sync();
+    events.assertEvents(t, [0, 'state.numbersArray[0]'], [1, 'state.numbersArray[1]']);
 });
 
 test('ShallowArrayState change field', (t) => {
-    t.plan(2);
-    const fixture = new Fixture(ShallowArrayState);
+    t.plan(1);
+    const fixture = new FakeClientServer(ShallowArrayState);
+    fixture.sync();
+    const events = wireEvents(fixture.client, new RecordedEvents(), 'state');
 
-    fixture.origin.numbersArray[0] = 0;
-    fixture.updateAndAssert(t);
+    fixture.server.numbersArray[0] = 0;
+    fixture.sync();
 
-    fixture.origin.numbersArray[0] = 1;
-    fixture.updateAndAssert(t);
+    fixture.server.numbersArray[0] = 1;
+    fixture.sync();
+    events.assertEvents(t, [0, 'state.numbersArray[0]'], [1, 'state.numbersArray[0]']);
 });
 
 test('ShallowArrayState remove field', (t) => {
-    t.plan(2);
-    const fixture = new Fixture(ShallowArrayState);
-    fixture.origin.numbersArray[0] = 0;
-    fixture.origin.numbersArray[1] = 1;
+    t.plan(1);
+    const fixture = new FakeClientServer(ShallowArrayState);
+    const events = wireEvents(fixture.client, new RecordedEvents(), 'state');
+    fixture.server.numbersArray[0] = 0;
+    fixture.server.numbersArray[1] = 1;
+    fixture.sync();
+    events.clear();
 
-    fixture.origin.numbersArray.unshift();
-    fixture.updateAndAssert(t);
+    fixture.server.numbersArray.pop();
+    fixture.sync();
 
-    fixture.origin.numbersArray.unshift();
-    fixture.updateAndAssert(t);
+    fixture.server.numbersArray.pop();
+    fixture.sync();
+    events.assertEvents(t, [undefined, 'state.numbersArray[1]'], [undefined, 'state.numbersArray[0]']);
 });

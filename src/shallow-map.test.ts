@@ -1,42 +1,54 @@
+import { FakeClientServer, RecordedEvents } from './helper.test';
 import { MapSchema, Schema, type } from '@colyseus/schema';
+
 import test from 'tape';
-import { Fixture } from './helper.test';
+import { wireEvents } from '.';
 
 export class ShallowMapState extends Schema {
     @type({ map: 'uint8' }) public mapNumbers = new MapSchema<number>();
 }
 
 test('ShallowMapState add field', (t) => {
-    t.plan(2);
-    const fixture = new Fixture(ShallowMapState);
+    t.plan(1);
+    const fixture = new FakeClientServer(ShallowMapState);
+    fixture.sync();
+    const events = wireEvents(fixture.client, new RecordedEvents(), 'state');
 
-    fixture.origin.mapNumbers.set('1', 1);
-    fixture.updateAndAssert(t);
+    fixture.server.mapNumbers.set('1', 1);
+    fixture.sync();
 
-    fixture.origin.mapNumbers.set('2', 2);
-    fixture.updateAndAssert(t);
+    fixture.server.mapNumbers.set('2', 2);
+    fixture.sync();
+    events.assertEvents(t, [1, 'state.mapNumbers["1"]'], [2, 'state.mapNumbers["2"]']);
 });
 
 test('ShallowMapState change field', (t) => {
-    t.plan(2);
-    const fixture = new Fixture(ShallowMapState);
+    t.plan(1);
+    const fixture = new FakeClientServer(ShallowMapState);
+    fixture.sync();
+    const events = wireEvents(fixture.client, new RecordedEvents(), 'state');
 
-    fixture.origin.mapNumbers.set('1', 1);
-    fixture.updateAndAssert(t);
+    fixture.server.mapNumbers.set('1', 1);
+    fixture.sync();
 
-    fixture.origin.mapNumbers.set('1', 2);
-    fixture.updateAndAssert(t);
+    fixture.server.mapNumbers.set('1', 2);
+    fixture.sync();
+    events.assertEvents(t, [1, 'state.mapNumbers["1"]'], [2, 'state.mapNumbers["1"]']);
 });
 
 test('ShallowMapState remove field', (t) => {
-    t.plan(2);
-    const fixture = new Fixture(ShallowMapState);
-    fixture.origin.mapNumbers.set('1', 1);
-    fixture.origin.mapNumbers.set('2', 2);
+    t.plan(1);
+    const fixture = new FakeClientServer(ShallowMapState);
+    const events = wireEvents(fixture.client, new RecordedEvents(), 'state');
+    fixture.server.mapNumbers.set('1', 1);
+    fixture.server.mapNumbers.set('2', 2);
+    fixture.sync();
+    events.clear();
 
-    fixture.origin.mapNumbers.delete('1');
-    fixture.updateAndAssert(t);
+    fixture.server.mapNumbers.delete('1');
+    fixture.sync();
 
-    fixture.origin.mapNumbers.delete('2');
-    fixture.updateAndAssert(t);
+    fixture.server.mapNumbers.delete('2');
+    fixture.sync();
+    events.assertEvents(t, [undefined, 'state.mapNumbers["1"]'], [undefined, 'state.mapNumbers["2"]']);
 });

@@ -1,28 +1,26 @@
-# colyseus-mobx
+# colyseus-events
 
-a mobx view of colyseus state. continues the work in https://github.com/a-rts/colyseus-mobx
+generate notification events from colyseus state. forked from https://github.com/amir-arad/colyseus-mobx
 
 ## version support 
-
-Written for Mobx 5.x, but should probably work with other Mobx versions.
 
 Due to breaking API changes in Colyseus, this version only supports Colyseus 0.14 and above (@colyseus/schema >= 1.0.2)
 
 ## Pending support
 
-The schema types new to Colyseus 0.14 (CollectionSchema and SetSchema) are not yet supported. please open an issue if you would like to use them.
+The schema types new to Colyseus 0.14 (`CollectionSchema` and `SetSchema`) are not yet supported. please open an issue if you would like to use them.
 
 ## Installation
-`npm install colyseus-mobx --save`
+`npm install colyseus-events --save`
 
 ## How to use
-Import `getMobxView` and call it once when connecting to a room on the client side, 
+Import `wireEvents` and call it once when connecting to a room on the client side, 
 ```typescript
-import { getMobxView } from 'colyseus-mobx';
+import { wireEvents } from 'colyseus-events';
 const room: Room<GameState> = await client.joinOrCreate("game");
-const mobxState = getMobxView(room.state);
+const events = wireEvents(room.state, new EventEmitter());
 ```
-then you can wire observers to `mobxState` and start rendering.
+then you can wire listeners to `events` and start triggering them.
 
 ## Developer instructions
 

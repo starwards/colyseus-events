@@ -1,6 +1,8 @@
+import { FakeClientServer, RecordedEvents } from './helper.test';
 import { Schema, type } from '@colyseus/schema';
+
 import test from 'tape';
-import { Fixture } from './helper.test';
+import { wireEvents } from '.';
 
 export class DeepState extends Schema {
     @type('uint8') public counter: number | undefined;
@@ -9,25 +11,32 @@ export class DeepState extends Schema {
 
 test('DeepState add field', (t) => {
     t.plan(2);
-    const fixture = new Fixture(DeepState);
+    const fixture = new FakeClientServer(DeepState);
+    const events = wireEvents(fixture.client, new RecordedEvents(), 'state');
 
-    fixture.origin.child = new DeepState();
-    fixture.updateAndAssert(t);
+    fixture.server.child = new DeepState();
+    fixture.sync();
+    events.assertEvents(t, [fixture.client.child, 'state.child']);
 
-    fixture.origin.child.child = new DeepState();
-    fixture.updateAndAssert(t);
+    fixture.server.child.child = new DeepState();
+    fixture.sync();
+    events.assertEvents(t, [fixture.client.child?.child, 'state.child.child']);
 });
 
 test('DeepState change field deep', (t) => {
-    t.plan(2);
-    const fixture = new Fixture(DeepState);
+    t.plan(1);
+    const fixture = new FakeClientServer(DeepState);
+    const events = wireEvents(fixture.client, new RecordedEvents(), 'state');
 
-    fixture.origin.child = new DeepState();
-    fixture.updateColyseusState();
-    fixture.origin.child.counter = 1;
-    fixture.updateAndAssert(t);
-    fixture.origin.child.counter = 2;
-    fixture.updateAndAssert(t);
+    fixture.server.child = new DeepState();
+    fixture.sync();
+    events.clear();
+
+    fixture.server.child.counter = 1;
+    fixture.sync();
+    fixture.server.child.counter = 2;
+    fixture.sync();
+    events.assertEvents(t, [1, 'state.child.counter'], [2, 'state.child.counter']);
 });
 
 test('DeepState change field with deep value', (t) => {
@@ -38,28 +47,13 @@ test('DeepState change field with deep value', (t) => {
     const child2 = new DeepState();
     child2.counter = 2;
 
-    const fixture = new Fixture(DeepState);
+    const fixture = new FakeClientServer(DeepState);
+    const events = wireEvents(fixture.client, new RecordedEvents(), 'state');
 
-    fixture.origin.child = child1;
-    fixture.updateAndAssert(t);
-
-    fixture.origin.child = child2;
-    fixture.updateAndAssert(t);
-});
-
-// colyseus does not trigger events on delete
-test.skip('DeepState delete field', (t) => {
-    t.plan(3);
-    const fixture = new Fixture(DeepState);
-
-    fixture.origin.child = new DeepState();
-    fixture.updateColyseusState();
-    fixture.origin.child.counter = 1;
-    fixture.updateAndAssert(t);
-
-    delete fixture.origin.child.counter;
-    fixture.updateAndAssert(t);
-
-    delete fixture.origin.child;
-    fixture.updateAndAssert(t);
+    fixture.server.child = child1;
+    fixture.sync();
+    events.assertEvents(t, [fixture.client.child, 'state.child'], [1, 'state.child.counter']);
+    fixture.server.child = child2;
+    fixture.sync();
+    events.assertEvents(t, [fixture.client.child, 'state.child'], [2, 'state.child.counter']);
 });

@@ -15,6 +15,13 @@ export interface Events<E = string> {
     on(event: E, fn: (...values: unknown[]) => unknown): unknown;
 }
 
+/**
+ * make every change in Colyseus state trigger an event in the EventEmitter using the provided namespace.
+ * @param state Colyseus state to track
+ * @param events EventsEmitter of you choice. has to support `emit()` and `on()`
+ * @param namespace Prefix of events name to emit
+ * @returns the provided events emitter
+ */
 export function wireEvents<T extends Events>(state: Colyseus, events: T, namespace: string): T {
     if (isPrimitive(state)) {
         return events;
@@ -29,24 +36,18 @@ export function wireEvents<T extends Events>(state: Colyseus, events: T, namespa
                 wireEvents(state[field as keyof typeof state], events, fieldNamespace);
             }
         };
-        for (const f in state) {
-            if (!schemaKeys.includes(f) && Object.prototype.hasOwnProperty.call(state, f)) {
-                const field = f;
+        for (const field in state) {
+            if (!schemaKeys.includes(field) && Object.prototype.hasOwnProperty.call(state, field)) {
                 const fieldNamespace = `${namespace}.${field}`;
                 //@ts-ignore : the field is legal for the state
                 wireEvents(state[field as keyof typeof state], events, fieldNamespace);
             }
         }
     } else if (state instanceof ArraySchema) {
-        state.onAdd = (value, field) => {
+        state.onAdd = state.onChange = (value: Colyseus, field) => {
             const fieldNamespace = `${namespace}[${field}]`;
             events.emit(fieldNamespace, value, fieldNamespace);
-            wireEvents(value as Colyseus, events, fieldNamespace);
-        };
-        state.onChange = (value, field) => {
-            const fieldNamespace = `${namespace}[${field}]`;
-            events.emit(fieldNamespace, value, fieldNamespace);
-            wireEvents(value as Colyseus, events, fieldNamespace);
+            wireEvents(value, events, fieldNamespace);
         };
         state.onRemove = (_, field) => {
             const fieldNamespace = `${namespace}[${field}]`;
@@ -57,15 +58,10 @@ export function wireEvents<T extends Events>(state: Colyseus, events: T, namespa
             wireEvents(value as Colyseus, events, fieldNamespace);
         }
     } else if (state instanceof MapSchema) {
-        state.onAdd = (value, field) => {
+        state.onAdd = state.onChange = (value: Colyseus, field) => {
             const fieldNamespace = `${namespace}["${field}"]`;
             events.emit(fieldNamespace, value, fieldNamespace);
-            wireEvents(value as Colyseus, events, fieldNamespace);
-        };
-        state.onChange = (value, field) => {
-            const fieldNamespace = `${namespace}["${field}"]`;
-            events.emit(fieldNamespace, value, fieldNamespace);
-            wireEvents(value as Colyseus, events, fieldNamespace);
+            wireEvents(value, events, fieldNamespace);
         };
         state.onRemove = (_, field) => {
             const fieldNamespace = `${namespace}["${field}"]`;

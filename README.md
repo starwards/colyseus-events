@@ -18,17 +18,16 @@ Import `wireEvents` and call it once when connecting to a room on the client sid
 ```typescript
 import { wireEvents } from 'colyseus-events';
 const room: Room<GameState> = await client.joinOrCreate("game");
-const events = wireEvents(room.state, new EventEmitter(), "state");
+const events = wireEvents(room.state, new EventEmitter());
 ```
 then you can wire listeners to `events` and start triggering them. 
 
 whenever something changes in the state, an event will be emitted immediately. the name of the event will be the path of the changed property (or element). The event value will be the new value of that property or element. for convenience, the second value will be the event name. this can be helpful for listeners thatregister for more that one property.
 
 examples:
-when the server executes: `state.foo.bar = 15` event `'state.foo.bar'` will be emitted with values `15` and `'state.foo.bar'`.
-when the server executes: `state.foo.bar.push(15)` event `'state.foo.bar[0]'` will be emitted with values `15` and `'state.foo.bar[0]'`.
+when the server executes: `room.state.foo.bar = 15` event `'foo.bar'` will be emitted with values `15` and `'foo.bar'`.
+when the server executes: `room.state.foo.bar.push(15)` event `'foo.bar[0]'` will be emitted with values `15` and `'foo.bar[0]'`.
 
-```
 
 ## Contributor instructions
 

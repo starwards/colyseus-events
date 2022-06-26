@@ -12,21 +12,21 @@ export class DeepState extends Schema {
 test('DeepState add field', (t) => {
     t.plan(2);
     const fixture = new FakeClientServer(DeepState);
-    const events = wireEvents(fixture.client, new RecordedEvents(), 'state');
+    const events = wireEvents(fixture.client, new RecordedEvents());
 
     fixture.server.child = new DeepState();
     fixture.sync();
-    events.assertEvents(t, [fixture.client.child, 'state.child']);
+    events.assertEvents(t, [fixture.client.child, 'child']);
 
     fixture.server.child.child = new DeepState();
     fixture.sync();
-    events.assertEvents(t, [fixture.client.child?.child, 'state.child.child']);
+    events.assertEvents(t, [fixture.client.child?.child, 'child.child']);
 });
 
 test('DeepState change field deep', (t) => {
     t.plan(1);
     const fixture = new FakeClientServer(DeepState);
-    const events = wireEvents(fixture.client, new RecordedEvents(), 'state');
+    const events = wireEvents(fixture.client, new RecordedEvents());
 
     fixture.server.child = new DeepState();
     fixture.sync();
@@ -36,7 +36,7 @@ test('DeepState change field deep', (t) => {
     fixture.sync();
     fixture.server.child.counter = 2;
     fixture.sync();
-    events.assertEvents(t, [1, 'state.child.counter'], [2, 'state.child.counter']);
+    events.assertEvents(t, [1, 'child.counter'], [2, 'child.counter']);
 });
 
 test('DeepState change field with deep value', (t) => {
@@ -48,12 +48,12 @@ test('DeepState change field with deep value', (t) => {
     child2.counter = 2;
 
     const fixture = new FakeClientServer(DeepState);
-    const events = wireEvents(fixture.client, new RecordedEvents(), 'state');
+    const events = wireEvents(fixture.client, new RecordedEvents());
 
     fixture.server.child = child1;
     fixture.sync();
-    events.assertEvents(t, [fixture.client.child, 'state.child'], [1, 'state.child.counter']);
+    events.assertEvents(t, [fixture.client.child, 'child'], [1, 'child.counter']);
     fixture.server.child = child2;
     fixture.sync();
-    events.assertEvents(t, [fixture.client.child, 'state.child'], [2, 'state.child.counter']);
+    events.assertEvents(t, [fixture.client.child, 'child'], [2, 'child.counter']);
 });

@@ -22,7 +22,7 @@ export interface Events<E = string> {
  * @param namespace Prefix of events name to emit
  * @returns the provided events emitter
  */
-export function wireEvents<T extends Events>(state: Colyseus, events: T, namespace: string): T {
+export function wireEvents<T extends Events>(state: Colyseus, events: T, namespace = ''): T {
     if (isPrimitive(state)) {
         return events;
     }
@@ -30,7 +30,7 @@ export function wireEvents<T extends Events>(state: Colyseus, events: T, namespa
     if (state instanceof Schema) {
         state.onChange = (changes) => {
             for (const { field, value } of changes) {
-                const fieldNamespace = `${namespace}.${field}`;
+                const fieldNamespace = namespace ? `${namespace}.${field}` : field;
                 events.emit(fieldNamespace, value, fieldNamespace);
                 //@ts-ignore : the field is legal for the state
                 wireEvents(state[field as keyof typeof state], events, fieldNamespace);
@@ -38,7 +38,7 @@ export function wireEvents<T extends Events>(state: Colyseus, events: T, namespa
         };
         for (const field in state) {
             if (!schemaKeys.includes(field) && Object.prototype.hasOwnProperty.call(state, field)) {
-                const fieldNamespace = `${namespace}.${field}`;
+                const fieldNamespace = namespace ? `${namespace}.${field}` : field;
                 //@ts-ignore : the field is legal for the state
                 wireEvents(state[field as keyof typeof state], events, fieldNamespace);
             }

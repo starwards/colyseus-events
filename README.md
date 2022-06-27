@@ -1,6 +1,6 @@
 # colyseus-events
 
-Generate json-patch events from colyseus state.
+Generate json-patch events from [colyseus](https://www.colyseus.io/) state.
 ```typescript
 import { wireEvents } from 'colyseus-events';
 const room: Room<GameState> = await client.joinOrCreate("game");

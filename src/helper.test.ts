@@ -1,4 +1,4 @@
-import { Colyseus } from '.';
+import { Event } from '.';
 import { EventEmitter2 } from 'eventemitter2';
 import { Schema } from '@colyseus/schema';
 import { Test } from 'tape';
@@ -31,13 +31,12 @@ export class FakeClientServer<T> {
     }
 }
 
-export type Event = [Colyseus | undefined, string];
 export class RecordedEvents extends EventEmitter2 {
-    private eventsLog = new Array<[Colyseus, string]>();
+    private eventsLog = new Array<Event>();
 
     constructor() {
         super({ wildcard: true });
-        this.on('**', (val: Colyseus, path: string) => this.eventsLog.push([val, path]));
+        this.on('**', (e: Event) => this.eventsLog.push(e));
     }
     clear() {
         this.eventsLog.splice(0, this.eventsLog.length);

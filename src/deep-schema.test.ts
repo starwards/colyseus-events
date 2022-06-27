@@ -6,7 +6,7 @@ import test from 'tape';
 import { wireEvents } from '.';
 
 export class DeepState extends Schema {
-    @type('uint8') public counter: number | undefined;
+    @type('uint8') public foo: number | undefined;
     @type(DeepState) public child: DeepState | undefined;
 }
 
@@ -39,26 +39,26 @@ test('DeepState change field deep', (t) => {
     fixture.sync();
     events.clear();
 
-    fixture.server.child.counter = 1;
+    fixture.server.child.foo = 1;
     fixture.sync();
-    fixture.server.child.counter = 2;
+    fixture.server.child.foo = 2;
     fixture.sync();
     events.assertEvents(
         t,
-        ['/child/counter', { op: 'replace', path: '/child/counter', value: 1 }],
-        ['/child/counter', { op: 'replace', path: '/child/counter', value: 2 }]
+        ['/child/foo', { op: 'replace', path: '/child/foo', value: 1 }],
+        ['/child/foo', { op: 'replace', path: '/child/foo', value: 2 }]
     );
 });
 
 test('DeepState change field with deep value', (t) => {
     t.plan(2);
     const child1 = new DeepState();
-    child1.counter = 0; // this change will not be reported
-    child1.counter = 1;
+    child1.foo = 0; // this change will not be reported
+    child1.foo = 1;
 
     const child2 = new DeepState();
-    child2.counter = 0; // this change will not be reported
-    child2.counter = 2;
+    child2.foo = 0; // this change will not be reported
+    child2.foo = 2;
 
     const fixture = new FakeClientServer(DeepState);
     const events = wireEvents(fixture.client, new RecordedEvents());
@@ -69,7 +69,7 @@ test('DeepState change field with deep value', (t) => {
     events.assertEvents(
         t,
         ['/child', { op: 'replace', path: '/child', value: fixture.client.child! }],
-        ['/child/counter', { op: 'replace', path: '/child/counter', value: 1 }]
+        ['/child/foo', { op: 'replace', path: '/child/foo', value: 1 }]
     );
 
     fixture.server.child = child2;
@@ -77,6 +77,6 @@ test('DeepState change field with deep value', (t) => {
     events.assertEvents(
         t,
         ['/child', { op: 'replace', path: '/child', value: fixture.client.child! }],
-        ['/child/counter', { op: 'replace', path: '/child/counter', value: 2 }]
+        ['/child/foo', { op: 'replace', path: '/child/foo', value: 2 }]
     );
 });

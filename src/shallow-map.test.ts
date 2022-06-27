@@ -21,8 +21,8 @@ test('ShallowMapState add field', (t) => {
     fixture.sync();
     events.assertEvents(
         t,
-        ['state/mapNumbers/1', { op: 'add', path: 'state/mapNumbers/1', value: 1 }],
-        ['state/mapNumbers/2', { op: 'add', path: 'state/mapNumbers/2', value: 2 }]
+        ['state/mapNumbers', { op: 'add', path: 'state/mapNumbers/1', value: 1 }],
+        ['state/mapNumbers', { op: 'add', path: 'state/mapNumbers/2', value: 2 }]
     );
 });
 
@@ -39,11 +39,61 @@ test('ShallowMapState change field', (t) => {
     fixture.sync();
     events.assertEvents(
         t,
-        ['state/mapNumbers/1', { op: 'add', path: 'state/mapNumbers/1', value: 1 }],
+        ['state/mapNumbers', { op: 'add', path: 'state/mapNumbers/1', value: 1 }],
         ['state/mapNumbers/1', { op: 'replace', path: 'state/mapNumbers/1', value: 2 }]
     );
 });
 
+test('ShallowMapState change map field with new state', (t) => {
+    t.plan(1);
+    const fixture = new FakeClientServer(ShallowMapState);
+    fixture.sync();
+    const events = wireEvents(fixture.client, new RecordedEvents(), 'state');
+
+    fixture.server.mapNumbers = new MapSchema({ '1': 1 });
+    fixture.sync();
+
+    events.assertEvents(
+        t,
+        ['state/mapNumbers', { op: 'replace', path: 'state/mapNumbers', value: fixture.client.mapNumbers }],
+        ['state/mapNumbers', { op: 'add', path: 'state/mapNumbers/1', value: 1 }]
+    );
+});
+
+test('ShallowMapState change map field with previous state', (t) => {
+    t.plan(1);
+    const fixture = new FakeClientServer(ShallowMapState);
+    fixture.server.mapNumbers.set('1', 1);
+    fixture.sync();
+    const events = wireEvents(fixture.client, new RecordedEvents(), 'state');
+
+    fixture.server.mapNumbers = new MapSchema();
+    fixture.sync();
+
+    events.assertEvents(
+        t,
+        ['state/mapNumbers', { op: 'replace', path: 'state/mapNumbers', value: fixture.client.mapNumbers }],
+        ['state/mapNumbers', { op: 'remove', path: 'state/mapNumbers/1' }]
+    );
+});
+
+test('ShallowMapState change map field with same (previous and existing) state', (t) => {
+    t.plan(1);
+    const fixture = new FakeClientServer(ShallowMapState);
+    fixture.server.mapNumbers.set('1', 1);
+    fixture.sync();
+    const events = wireEvents(fixture.client, new RecordedEvents(), 'state');
+
+    fixture.server.mapNumbers = new MapSchema({ '1': 1 });
+    fixture.sync();
+
+    events.assertEvents(
+        t,
+        ['state/mapNumbers', { op: 'replace', path: 'state/mapNumbers', value: fixture.client.mapNumbers }],
+        ['state/mapNumbers', { op: 'remove', path: 'state/mapNumbers/1' }],
+        ['state/mapNumbers', { op: 'add', path: 'state/mapNumbers/1', value: 1 }]
+    );
+});
 test('ShallowMapState remove field', (t) => {
     t.plan(1);
     const fixture = new FakeClientServer(ShallowMapState);
@@ -60,7 +110,7 @@ test('ShallowMapState remove field', (t) => {
     fixture.sync();
     events.assertEvents(
         t,
-        ['state/mapNumbers/1', { op: 'remove', path: 'state/mapNumbers/1' }],
-        ['state/mapNumbers/2', { op: 'remove', path: 'state/mapNumbers/2' }]
+        ['state/mapNumbers', { op: 'remove', path: 'state/mapNumbers/1' }],
+        ['state/mapNumbers', { op: 'remove', path: 'state/mapNumbers/2' }]
     );
 });

@@ -32,9 +32,9 @@ export function remove(path: string): Remove {
 /**
  * make every change in Colyseus state trigger an event in the EventEmitter using the provided namespace.
  * @param state Colyseus state to track
- * @param events EventsEmitter of you choice. has to support `emit()` and `on()`
- * @param namespace Prefix of events name to emit
- * @returns the provided events emitter
+ * @param events EventsEmitter of you choice. has to at least have the method `emit(eventName, value)`.
+ * @param namespace (optional) Prefix of json pointer
+ * @returns the provided events emitter (2nd argument)
  */
 export function wireEvents<T extends Events>(state: Colyseus, events: T, namespace = ''): T {
     if (isPrimitive(state)) {
@@ -53,14 +53,13 @@ export function wireEvents<T extends Events>(state: Colyseus, events: T, namespa
             if (!schemaKeys.includes(field) && Object.prototype.hasOwnProperty.call(state, field)) {
                 const fieldNamespace = `${namespace}/${field}`;
                 const value = state[field as keyof typeof state] as unknown as Colyseus;
-                // events.emit(fieldNamespace, add(fieldNamespace, value));
                 wireEvents(value, events, fieldNamespace);
             }
         }
     } else if (state instanceof ArraySchema) {
         state.onAdd = (value: Colyseus, field) => {
             const fieldNamespace = `${namespace}/${field}`;
-            events.emit(fieldNamespace, add(fieldNamespace, value));
+            events.emit(namespace, add(fieldNamespace, value));
             wireEvents(value, events, fieldNamespace);
         };
         state.onChange = (value: Colyseus, field) => {
@@ -70,17 +69,16 @@ export function wireEvents<T extends Events>(state: Colyseus, events: T, namespa
         };
         state.onRemove = (_, field) => {
             const fieldNamespace = `${namespace}/${field}`;
-            events.emit(fieldNamespace, remove(fieldNamespace));
+            events.emit(namespace, remove(fieldNamespace));
         };
         for (const [field, value] of state.entries()) {
             const fieldNamespace = `${namespace}/${field}`;
-            events.emit(fieldNamespace, add(fieldNamespace, value as Colyseus));
             wireEvents(value as Colyseus, events, fieldNamespace);
         }
     } else if (state instanceof MapSchema) {
         state.onAdd = (value: Colyseus, field) => {
             const fieldNamespace = `${namespace}/${field}`;
-            events.emit(fieldNamespace, add(fieldNamespace, value));
+            events.emit(namespace, add(fieldNamespace, value));
             wireEvents(value, events, fieldNamespace);
         };
         state.onChange = (value: Colyseus, field) => {
@@ -90,11 +88,10 @@ export function wireEvents<T extends Events>(state: Colyseus, events: T, namespa
         };
         state.onRemove = (_, field) => {
             const fieldNamespace = `${namespace}/${field}`;
-            events.emit(fieldNamespace, remove(fieldNamespace));
+            events.emit(namespace, remove(fieldNamespace));
         };
         for (const [field, value] of state.entries()) {
             const fieldNamespace = `${namespace}/${field}`;
-            events.emit(fieldNamespace, add(fieldNamespace, value as Colyseus));
             wireEvents(value as Colyseus, events, fieldNamespace);
         }
     }

@@ -11,8 +11,7 @@ function isPrimitive(val: unknown): val is Primitive {
 }
 
 export interface Events<E = string> {
-    emit(event: E, value: Event): unknown;
-    on(event: E, fn: (value: Event) => unknown): unknown;
+    emit(eventName: E, value: Event): unknown;
 }
 
 export type Add = { op: 'add'; path: string; value: Colyseus };

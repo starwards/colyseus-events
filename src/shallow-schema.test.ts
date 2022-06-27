@@ -14,7 +14,7 @@ test('ShallowState add field', (t) => {
     const events = wireEvents(fixture.client, new RecordedEvents());
     fixture.server.counter = 1;
     fixture.sync();
-    events.assertEvents(t, { op: 'replace', path: '/counter', value: 1 });
+    events.assertEvents(t, ['/counter', { op: 'replace', path: '/counter', value: 1 }]);
 });
 
 test('ShallowState change field', (t) => {
@@ -23,8 +23,8 @@ test('ShallowState change field', (t) => {
     const events = wireEvents(fixture.client, new RecordedEvents());
     fixture.server.counter = 1;
     fixture.sync();
-    events.assertEvents(t, { op: 'replace', path: '/counter', value: 1 });
+    events.assertEvents(t, ['/counter', { op: 'replace', path: '/counter', value: 1 }]);
     fixture.server.counter = 2;
     fixture.sync();
-    events.assertEvents(t, { op: 'replace', path: '/counter', value: 2 });
+    events.assertEvents(t, ['/counter', { op: 'replace', path: '/counter', value: 2 }]);
 });

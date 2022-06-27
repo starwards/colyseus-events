@@ -21,8 +21,8 @@ test('ShallowArrayState add field', (t) => {
     fixture.sync();
     events.assertEvents(
         t,
-        { op: 'add', path: 'state/numbersArray/0', value: 0 },
-        { op: 'add', path: 'state/numbersArray/1', value: 1 }
+        ['state/numbersArray/0', { op: 'add', path: 'state/numbersArray/0', value: 0 }],
+        ['state/numbersArray/1', { op: 'add', path: 'state/numbersArray/1', value: 1 }]
     );
 });
 
@@ -39,8 +39,8 @@ test('ShallowArrayState change field', (t) => {
     fixture.sync();
     events.assertEvents(
         t,
-        { op: 'add', path: 'state/numbersArray/0', value: 0 },
-        { op: 'replace', path: 'state/numbersArray/0', value: 1 }
+        ['state/numbersArray/0', { op: 'add', path: 'state/numbersArray/0', value: 0 }],
+        ['state/numbersArray/0', { op: 'replace', path: 'state/numbersArray/0', value: 1 }]
     );
 });
 
@@ -60,7 +60,7 @@ test('ShallowArrayState remove field', (t) => {
     fixture.sync();
     events.assertEvents(
         t,
-        { op: 'remove', path: 'state/numbersArray/1' },
-        { op: 'remove', path: 'state/numbersArray/0' }
+        ['state/numbersArray/1', { op: 'remove', path: 'state/numbersArray/1' }],
+        ['state/numbersArray/0', { op: 'remove', path: 'state/numbersArray/0' }]
     );
 });

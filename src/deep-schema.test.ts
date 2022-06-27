@@ -18,12 +18,15 @@ test('DeepState add field', (t) => {
 
     fixture.server.child = new DeepState();
     fixture.sync();
-    events.assertEvents(t, { op: 'replace', path: '/child', value: fixture.client.child! });
+    events.assertEvents(t, ['/child', { op: 'replace', path: '/child', value: fixture.client.child! }]);
 
     const child = new DeepState();
     fixture.server.child.child = child;
     fixture.sync();
-    events.assertEvents(t, { op: 'replace', path: '/child/child', value: fixture.client.child!.child! });
+    events.assertEvents(t, [
+        '/child/child',
+        { op: 'replace', path: '/child/child', value: fixture.client.child!.child! },
+    ]);
 });
 
 test('DeepState change field deep', (t) => {
@@ -42,8 +45,8 @@ test('DeepState change field deep', (t) => {
     fixture.sync();
     events.assertEvents(
         t,
-        { op: 'replace', path: '/child/counter', value: 1 },
-        { op: 'replace', path: '/child/counter', value: 2 }
+        ['/child/counter', { op: 'replace', path: '/child/counter', value: 1 }],
+        ['/child/counter', { op: 'replace', path: '/child/counter', value: 2 }]
     );
 });
 
@@ -65,15 +68,15 @@ test('DeepState change field with deep value', (t) => {
     fixture.sync();
     events.assertEvents(
         t,
-        { op: 'replace', path: '/child', value: fixture.client.child! },
-        { op: 'replace', path: '/child/counter', value: 1 }
+        ['/child', { op: 'replace', path: '/child', value: fixture.client.child! }],
+        ['/child/counter', { op: 'replace', path: '/child/counter', value: 1 }]
     );
 
     fixture.server.child = child2;
     fixture.sync();
     events.assertEvents(
         t,
-        { op: 'replace', path: '/child', value: fixture.client.child! },
-        { op: 'replace', path: '/child/counter', value: 2 }
+        ['/child', { op: 'replace', path: '/child', value: fixture.client.child! }],
+        ['/child/counter', { op: 'replace', path: '/child/counter', value: 2 }]
     );
 });

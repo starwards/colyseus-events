@@ -1,6 +1,6 @@
 {
     "name": "colyseus-events",
-    "version": "2.0.0",
+    "version": "2.1.0",
     "description": "generate notification events from colyseus state",
     "repository": "git@github.com:starwards/colyseus-events.git",
     "homepage": "https://github.com/starwards/colyseus-events",

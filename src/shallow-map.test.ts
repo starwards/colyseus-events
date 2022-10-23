@@ -50,7 +50,7 @@ test('ShallowMapState change map field with new state', (t) => {
     fixture.sync();
     const events = wireEvents(fixture.client, new RecordedEvents(), 'state');
 
-    fixture.server.mapNumbers = new MapSchema({ '1': 1 });
+    fixture.server.mapNumbers = new MapSchema<number>({ '1': 1 });
     fixture.sync();
 
     events.assertEvents(
@@ -84,7 +84,7 @@ test('ShallowMapState change map field with same (previous and existing) state',
     fixture.sync();
     const events = wireEvents(fixture.client, new RecordedEvents(), 'state');
 
-    fixture.server.mapNumbers = new MapSchema({ '1': 1 });
+    fixture.server.mapNumbers = new MapSchema<number>({ '1': 1 });
     fixture.sync();
 
     events.assertEvents(

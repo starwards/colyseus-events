@@ -3,7 +3,7 @@ import { ArraySchema, MapSchema, Schema } from '@colyseus/schema';
 
 // all objects in this module are frozen, to narrow API surface
 
-export const schemaKeys = Object.freeze(Object.keys(new (class extends Schema {})()).concat(['onChange']));
+export const schemaKeys = Object.freeze(Object.keys(new (class extends Schema {})()).concat(['onChange', 'onRemove']));
 
 export const handleSchema = Object.freeze({
     /**

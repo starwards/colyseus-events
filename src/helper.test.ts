@@ -31,14 +31,20 @@ export class FakeClientServer<T> {
 }
 
 export class RecordedEvents {
+    private clearCb: null | (() => void) = null;
     private eventsLog = new Array<[string, Event]>();
 
     emit(eventName: string, value: Event) {
         this.eventsLog.push([eventName, value]);
     }
 
+    onClear(cb: () => void) {
+        this.clearCb = cb;
+    }
     clear() {
         this.eventsLog.splice(0, this.eventsLog.length);
+        this.clearCb?.();
+        return this;
     }
 
     assertEvents(t: Test, ...events: [string, Event][]) {

@@ -17,6 +17,13 @@ export type Replace = { op: 'replace'; path: string; value: Colyseus };
 export type Remove = { op: 'remove'; path: string };
 export type Event = Add | Remove | Replace;
 
+export function equalEvents(a: Event, b: Event): boolean {
+    if (a === b) return true;
+    if (a.op !== b.op || a.path !== b.path) return false;
+    if (a.op === 'remove') return true; // 'remove' events have no 'value'
+    return a.value === (b as Add | Replace).value;
+}
+
 export function Add(path: string, value: Colyseus): Add {
     return { op: 'add', path, value };
 }
@@ -27,7 +34,7 @@ export function Remove(path: string): Remove {
     return { op: 'remove', path };
 }
 
-export type Traverse<T extends Events = Events> = (state: Colyseus, events: T, jsonPath: string) => T;
+export type Traverse<T extends Events = Events> = (state: Colyseus, events: T, jsonPath: string) => unknown;
 
 /**
  * logic to wire events for a single entity type

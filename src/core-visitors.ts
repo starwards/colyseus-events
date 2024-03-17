@@ -1,87 +1,105 @@
 import { Add, Colyseus, Container, Events, Remove, Replace, Traverse, Visitor } from './types';
 import { ArraySchema, MapSchema, Schema } from '@colyseus/schema';
 
-// all objects in this module are frozen, to narrow API surface
-
-export const schemaKeys = Object.freeze(Object.keys(new (class extends Schema {})()).concat(['onChange', 'onRemove']));
+import { CallbacksCleanup } from './destructors';
 
 export const handleSchema = Object.freeze({
-    /**
-     * keys that exist on any schema object - are not data fields
-     */
-    schemaKeys,
-    visit: (traverse: Traverse, state: Container, events: Events, namespace: string) => {
+    cache: new CallbacksCleanup(),
+    visit(traverse: Traverse, state: Container, events: Events, namespace: string) {
         if (!(state instanceof Schema)) {
             return false;
         }
-        state.onChange = (changes) => {
-            for (const { field, value } of changes) {
-                const fieldNamespace = `${namespace}/${field}`;
+        // @ts-ignore: access _definition to get fields list
+        const fieldsList = Object.values(state._definition.fieldsByIndex);
+        const destructors = this.cache.resetDestructors(state);
+        for (const field of fieldsList) {
+            const fieldNamespace = `${namespace}/${field}`;
+            const d = state.listen(field as never, (value, previousValue) => {
+                if (value === previousValue) return;
                 events.emit(fieldNamespace, Replace(fieldNamespace, value as Colyseus));
                 traverse(value as Colyseus, events, fieldNamespace);
-            }
-        };
-        for (const field in state) {
-            if (!schemaKeys.includes(field) && Object.prototype.hasOwnProperty.call(state, field)) {
-                const fieldNamespace = `${namespace}/${field}`;
-                const value = state[field as keyof typeof state] as unknown as Colyseus;
-                traverse(value, events, fieldNamespace);
-            }
+            });
+            destructors.add(d);
         }
+        this.cache.recheckCallbacks(state);
         return true;
     },
 });
 
 export const handleArraySchema = Object.freeze({
-    visit: (traverse: Traverse, state: Container, events: Events, namespace: string) => {
+    cache: new CallbacksCleanup(),
+    visit(traverse: Traverse, state: Container, events: Events, namespace: string) {
         if (!(state instanceof ArraySchema)) {
             return false;
         }
-        state.onAdd = (value: Colyseus, field) => {
-            const fieldNamespace = `${namespace}/${field}`;
-            events.emit(namespace, Add(fieldNamespace, value));
-            traverse(value, events, fieldNamespace);
-        };
-        state.onChange = (value: Colyseus, field) => {
-            const fieldNamespace = `${namespace}/${field}`;
-            events.emit(fieldNamespace, Replace(fieldNamespace, value));
-            traverse(value, events, fieldNamespace);
-        };
-        state.onRemove = (_, field) => {
-            const fieldNamespace = `${namespace}/${field}`;
-            events.emit(namespace, Remove(fieldNamespace));
-        };
-        for (const [field, value] of state.entries()) {
-            const fieldNamespace = `${namespace}/${field}`;
-            traverse(value as Colyseus, events, fieldNamespace);
-        }
+        const knownKeys = new Set<number>(); // for ignoring first and last onChange
+        const destructors = this.cache.resetDestructors(state);
+        destructors.add(
+            state.onAdd((value: Colyseus, field: number) => {
+                const fieldNamespace = `${namespace}/${field}`;
+                events.emit(namespace, Add(fieldNamespace, value));
+                traverse(value, events, fieldNamespace);
+            })
+        );
+        destructors.add(
+            state.onChange((value: Colyseus, field: number) => {
+                if (knownKeys.has(field)) {
+                    const fieldNamespace = `${namespace}/${field}`;
+                    events.emit(fieldNamespace, Replace(fieldNamespace, value));
+                    traverse(value, events, fieldNamespace);
+                } else {
+                    knownKeys.add(field);
+                }
+            })
+        );
+        destructors.add(
+            state.onRemove((_, field: number) => {
+                knownKeys.delete(field);
+                const fieldNamespace = `${namespace}/${field}`;
+                events.emit(namespace, Remove(fieldNamespace));
+            })
+        );
+        this.cache.recheckCallbacks(state);
         return true;
     },
 });
 
 export const handleMapSchema = Object.freeze({
-    visit: (traverse: Traverse, state: Container, events: Events, namespace: string) => {
+    cache: new CallbacksCleanup(),
+    visit(traverse: Traverse, state: Container, events: Events, namespace: string) {
+        // Check if it is going to handle the state object, and return `false` if not.
         if (!(state instanceof MapSchema)) {
             return false;
         }
-        state.onAdd = (value: Colyseus, field) => {
-            const fieldNamespace = `${namespace}/${field}`;
-            events.emit(namespace, Add(fieldNamespace, value));
-            traverse(value, events, fieldNamespace);
-        };
-        state.onChange = (value: Colyseus, field) => {
-            const fieldNamespace = `${namespace}/${field}`;
-            events.emit(fieldNamespace, Replace(fieldNamespace, value));
-            traverse(value, events, fieldNamespace);
-        };
-        state.onRemove = (_, field) => {
-            const fieldNamespace = `${namespace}/${field}`;
-            events.emit(namespace, Remove(fieldNamespace));
-        };
-        for (const [field, value] of state.entries()) {
-            const fieldNamespace = `${namespace}/${field}`;
-            traverse(value as Colyseus, events, fieldNamespace);
-        }
+        const knownKeys = new Set<string>(); // for ignoring first and last onChange
+        const destructors = this.cache.resetDestructors(state);
+        // Hook on new elements and register destructors
+        destructors.add(
+            state.onAdd((value: Colyseus, field: string) => {
+                const fieldNamespace = `${namespace}/${field}`; // path to the new element
+                events.emit(namespace, Add(fieldNamespace, value)); // emit the add event
+                traverse(value, events, fieldNamespace); // call the traverse function on the new value
+            })
+        );
+        destructors.add(
+            state.onChange((value: Colyseus, field: string) => {
+                if (knownKeys.has(field)) {
+                    const fieldNamespace = `${namespace}/${field}`;
+                    events.emit(fieldNamespace, Replace(fieldNamespace, value));
+                    traverse(value, events, fieldNamespace);
+                } else {
+                    knownKeys.add(field);
+                }
+            })
+        );
+        destructors.add(
+            state.onRemove((_, field: string) => {
+                knownKeys.delete(field);
+                const fieldNamespace = `${namespace}/${field}`;
+                events.emit(namespace, Remove(fieldNamespace));
+            })
+        );
+        this.cache.recheckCallbacks(state);
         return true;
     },
 });

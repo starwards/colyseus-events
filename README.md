@@ -4,13 +4,13 @@ Generate json-patch events from [colyseus](https://www.colyseus.io/) state.
 ```typescript
 import { wireEvents } from 'colyseus-events';
 const room: Room<GameState> = await client.joinOrCreate("game");
-const events = wireEvents(room.state, new EventEmitter());
+const { events } = wireEvents(room.state, new EventEmitter());
 // `events` will emit json-patch events whenever the room state changes
 ```
 
 ## version support 
 
-Due to breaking API changes in Colyseus, this version only supports Colyseus 0.14 and above (@colyseus/schema >= 1.0.2)
+Due to breaking API changes in Colyseus, this version only supports Colyseus 0.15 and above (@colyseus/schema 2.x)
 
 ## Pending support
 
@@ -25,7 +25,7 @@ Import `wireEvents` and call it once when connecting to a room on the client sid
 ```typescript
 import { wireEvents } from 'colyseus-events';
 const room: Room<GameState> = await client.joinOrCreate("game");
-const events = wireEvents(room.state, new EventEmitter());
+const { events } = wireEvents(room.state, new EventEmitter());
 // `events` will emit json-patch events whenever the room state changes
 ```
 then you can wire listeners to `events` using the [JSON-pointer](https://github.com/janl/node-jsonpointer) of target field as event name.
@@ -39,7 +39,7 @@ const special = {
 };
 const wireEvents = customWireEvents([ special, ...coreVisitors]);
 const room: Room<GameState> = await client.joinOrCreate("game");
-const events = wireEvents(room.state, new EventEmitter());
+const { events } = wireEvents(room.state, new EventEmitter());
 // `events` will emit json-patch events whenever the room state changes
 ```
 `customWireEvents` accepts a single argument, a collection of `Visitor` objects, and returns afunctyion compatible with the default `wireEvents`. In fact, the default `wireEvents` function is itself the result `customWireEvents` when using `coreVisitors` as the argument. it is defined in [wire-events.ts](src/wire-events.ts#L42) by the following line:
@@ -51,11 +51,12 @@ The order of the visitors is crucial: they are executed as a fallback chain: the
 A visitor must implement a single method, `visit`. This method should:
 1. Check if it is going to handle the state object, and return `false` if not.
 2. Call the traverse function for each child member of the state.
-3. Hook on the state's [`.onChange`](https://docs.colyseus.io/colyseus/state/schema/#onchange-changes-datachange) and possibly [`.onAdd`](https://docs.colyseus.io/colyseus/state/schema/#onadd-instance-key) and [`.onRemove`](https://docs.colyseus.io/colyseus/state/schema/#onremove-instance-key), or perhaspse the [`.listen`](https://docs.colyseus.io/colyseus/state/schema/#listenprop-callback) mechanism.
+3. Hook on the state's [Client-side Callbacks](https://docs.colyseus.io/state/schema-callbacks/#state-sync-client-side-callbacks). Make sure to only hook once per state object. This may become trickey with Proxies, and 'stickey' callbacks.
 4. For every new value in each child member of the state, call the traverse function and emit the events using the event emitter.
-Examples can be found in [core-visitors.ts](src/core-visitors.ts). Here is the visitor that handles `MapSchema`:
+Examples can be found in [core-visitors.ts](src/core-visitors.ts). Here is a brief of the visitor that handles `MapSchema`:
 ```typescript
 {
+    
     visit: (traverse: Traverse, state: Container, events: Events, namespace: string) => {
             // Check if it is going to handle the state object, and return `false` if not.
             if (!(state instanceof MapSchema)) {
@@ -70,16 +71,12 @@ Examples can be found in [core-visitors.ts](src/core-visitors.ts). Here is the v
             
             ...
 
-            // Call the traverse function for each child member of the state.
-            for (const [field, value] of state.entries()) {
-                const fieldNamespace = `${namespace}/${field}`;
-                traverse(value as Colyseus, events, fieldNamespace);
-            }
             // finally return true. this will break the visitors fallback chain and complete the wiring for this object.
             return true;
         }
 }
 ```
+In addition to the code above, there ais also code to handle duplicate events and keeping only one registration per state object.
 ## Examples
 
 For example, given the room state:

@@ -15,7 +15,8 @@ export class ChildState extends ParentState {
 test('ParentState add field', (t) => {
     t.plan(1);
     const fixture = new FakeClientServer(ChildState);
-    const events = wireEvents(fixture.client, new RecordedEvents());
+    const { events, clearCache } = wireEvents(fixture.client, new RecordedEvents());
+    events.onClear(clearCache);
     fixture.server.parent = 1;
     fixture.sync();
     events.assertEvents(t, ['/parent', { op: 'replace', path: '/parent', value: 1 }]);
@@ -24,7 +25,8 @@ test('ParentState add field', (t) => {
 test('ParentState change field', (t) => {
     t.plan(2);
     const fixture = new FakeClientServer(ChildState);
-    const events = wireEvents(fixture.client, new RecordedEvents());
+    const { events, clearCache } = wireEvents(fixture.client, new RecordedEvents());
+    events.onClear(clearCache);
     fixture.server.parent = 1;
     fixture.sync();
     events.assertEvents(t, ['/parent', { op: 'replace', path: '/parent', value: 1 }]);
@@ -36,7 +38,8 @@ test('ParentState change field', (t) => {
 test('ChildState add field', (t) => {
     t.plan(1);
     const fixture = new FakeClientServer(ChildState);
-    const events = wireEvents(fixture.client, new RecordedEvents());
+    const { events, clearCache } = wireEvents(fixture.client, new RecordedEvents());
+    events.onClear(clearCache);
     fixture.server.child = 1;
     fixture.sync();
     events.assertEvents(t, ['/child', { op: 'replace', path: '/child', value: 1 }]);
@@ -45,7 +48,8 @@ test('ChildState add field', (t) => {
 test('ChildState change field', (t) => {
     t.plan(2);
     const fixture = new FakeClientServer(ChildState);
-    const events = wireEvents(fixture.client, new RecordedEvents());
+    const { events, clearCache } = wireEvents(fixture.client, new RecordedEvents());
+    events.onClear(clearCache);
     fixture.server.child = 1;
     fixture.sync();
     events.assertEvents(t, ['/child', { op: 'replace', path: '/child', value: 1 }]);

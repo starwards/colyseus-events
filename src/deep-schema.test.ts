@@ -13,7 +13,8 @@ export class DeepState extends Schema {
 test('DeepState add field', (t) => {
     t.plan(2);
     const fixture = new FakeClientServer(DeepState);
-    const events = wireEvents(fixture.client, new RecordedEvents());
+    const { events, clearCache } = wireEvents(fixture.client, new RecordedEvents());
+    events.onClear(clearCache);
     events.clear();
 
     fixture.server.child = new DeepState();
@@ -32,7 +33,8 @@ test('DeepState add field', (t) => {
 test('DeepState change field deep', (t) => {
     t.plan(1);
     const fixture = new FakeClientServer(DeepState);
-    const events = wireEvents(fixture.client, new RecordedEvents());
+    const { events, clearCache } = wireEvents(fixture.client, new RecordedEvents());
+    events.onClear(clearCache);
     events.clear();
 
     fixture.server.child = new DeepState();
@@ -61,7 +63,9 @@ test('DeepState change field with deep value', (t) => {
     child2.foo = 2;
 
     const fixture = new FakeClientServer(DeepState);
-    const events = wireEvents(fixture.client, new RecordedEvents());
+    const { events, clearCache } = wireEvents(fixture.client, new RecordedEvents());
+    events.onClear(clearCache);
+    fixture.sync();
     events.clear();
 
     fixture.server.child = child1;

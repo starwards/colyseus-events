@@ -1,5 +1,7 @@
 import { Colyseus, Events, Visitor, isPrimitive } from './types';
 
+import { DeDupeEmitter } from './de-dupe-wrapper';
+import { SymbolWeakSet } from './weak-set';
 import { coreVisitors } from './core-visitors';
 
 /**
@@ -17,17 +19,26 @@ export type WireEvents = ReturnType<typeof customWireEvents>;
  * @returns a customized `wireEvents` function
  */
 export function customWireEvents(visitors: Iterable<Visitor>) {
-    return function recursive<T extends Events>(state: Colyseus, events: T, namespace = ''): T {
-        if (isPrimitive(state)) {
-            return events;
-        }
-
-        for (const ch of visitors) {
-            if (ch.visit(recursive, state, events, namespace)) {
+    return function wireEvents<T extends Events>(root: Colyseus, userEvents: T, rootNamespace = '') {
+        const wiredContainers = new SymbolWeakSet();
+        function recursive(state: Colyseus, events: Events, namespace: string) {
+            if (isPrimitive(state)) {
                 return events;
             }
+            if (wiredContainers.has(state)) {
+                return events;
+            }
+            wiredContainers.add(state);
+            for (const ch of visitors) {
+                if (ch.visit(recursive, state, events, namespace)) {
+                    return events;
+                }
+            }
+            return events;
         }
-        return events;
+        const dedupedEvents = new DeDupeEmitter(userEvents);
+        recursive(root, dedupedEvents, rootNamespace);
+        return { events: userEvents, clearCache: dedupedEvents.clearCache };
     };
 }
 

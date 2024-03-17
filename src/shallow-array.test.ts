@@ -11,8 +11,10 @@ export class ShallowArrayState extends Schema {
 test('ShallowArrayState add field', (t) => {
     t.plan(1);
     const fixture = new FakeClientServer(ShallowArrayState);
+    const { events, clearCache } = wireEvents(fixture.client, new RecordedEvents());
+    events.onClear(clearCache);
     fixture.sync();
-    const events = wireEvents(fixture.client, new RecordedEvents(), 'state');
+    events.clear();
 
     fixture.server.numbersArray[0] = 0;
     fixture.sync();
@@ -21,16 +23,18 @@ test('ShallowArrayState add field', (t) => {
     fixture.sync();
     events.assertEvents(
         t,
-        ['state/numbersArray', { op: 'add', path: 'state/numbersArray/0', value: 0 }],
-        ['state/numbersArray', { op: 'add', path: 'state/numbersArray/1', value: 1 }]
+        ['/numbersArray', { op: 'add', path: '/numbersArray/0', value: 0 }],
+        ['/numbersArray', { op: 'add', path: '/numbersArray/1', value: 1 }]
     );
 });
 
 test('ShallowArrayState change field', (t) => {
     t.plan(1);
     const fixture = new FakeClientServer(ShallowArrayState);
+    const { events, clearCache } = wireEvents(fixture.client, new RecordedEvents());
+    events.onClear(clearCache);
     fixture.sync();
-    const events = wireEvents(fixture.client, new RecordedEvents(), 'state');
+    events.clear();
 
     fixture.server.numbersArray[0] = 0;
     fixture.sync();
@@ -39,60 +43,73 @@ test('ShallowArrayState change field', (t) => {
     fixture.sync();
     events.assertEvents(
         t,
-        ['state/numbersArray', { op: 'add', path: 'state/numbersArray/0', value: 0 }],
-        ['state/numbersArray/0', { op: 'replace', path: 'state/numbersArray/0', value: 1 }]
+        ['/numbersArray', { op: 'add', path: '/numbersArray/0', value: 0 }],
+        ['/numbersArray/0', { op: 'replace', path: '/numbersArray/0', value: 1 }]
     );
 });
 
 test('ShallowArrayState change array field with new state', (t) => {
     t.plan(1);
     const fixture = new FakeClientServer(ShallowArrayState);
+    const { events, clearCache } = wireEvents(fixture.client, new RecordedEvents());
+    events.onClear(clearCache);
     fixture.sync();
-    const events = wireEvents(fixture.client, new RecordedEvents(), 'state');
+    events.clear();
+
     fixture.server.numbersArray = new ArraySchema(0);
     fixture.sync();
     events.assertEvents(
         t,
-        ['state/numbersArray', { op: 'replace', path: 'state/numbersArray', value: fixture.client.numbersArray }],
-        ['state/numbersArray', { op: 'add', path: 'state/numbersArray/0', value: 0 }]
+        ['/numbersArray', { op: 'replace', path: '/numbersArray', value: fixture.client.numbersArray }],
+        ['/numbersArray', { op: 'add', path: '/numbersArray/0', value: 0 }]
     );
 });
 
 test('ShallowArrayState change array field with previous state', (t) => {
     t.plan(1);
     const fixture = new FakeClientServer(ShallowArrayState);
+    const { events, clearCache } = wireEvents(fixture.client, new RecordedEvents());
+    events.onClear(clearCache);
     fixture.server.numbersArray[0] = 0;
     fixture.sync();
-    const events = wireEvents(fixture.client, new RecordedEvents(), 'state');
+    events.clear();
+
     fixture.server.numbersArray = new ArraySchema();
     fixture.sync();
     events.assertEvents(
         t,
-        ['state/numbersArray', { op: 'replace', path: 'state/numbersArray', value: fixture.client.numbersArray }],
-        ['state/numbersArray', { op: 'remove', path: 'state/numbersArray/0' }]
+        ['/numbersArray', { op: 'remove', path: '/numbersArray/0' }],
+        ['/numbersArray', { op: 'replace', path: '/numbersArray', value: fixture.client.numbersArray }]
     );
 });
 
 test('ShallowArrayState change array field with same (previous and existing) state', (t) => {
     t.plan(1);
     const fixture = new FakeClientServer(ShallowArrayState);
+    const { events, clearCache } = wireEvents(fixture.client, new RecordedEvents());
+    events.onClear(clearCache);
     fixture.server.numbersArray[0] = 0;
     fixture.sync();
-    const events = wireEvents(fixture.client, new RecordedEvents(), 'state');
+    events.clear();
+
     fixture.server.numbersArray = new ArraySchema(0);
     fixture.sync();
     events.assertEvents(
         t,
-        ['state/numbersArray', { op: 'replace', path: 'state/numbersArray', value: fixture.client.numbersArray }],
-        ['state/numbersArray', { op: 'remove', path: 'state/numbersArray/0' }],
-        ['state/numbersArray', { op: 'add', path: 'state/numbersArray/0', value: 0 }]
+        ['/numbersArray', { op: 'remove', path: '/numbersArray/0' }],
+        ['/numbersArray', { op: 'replace', path: '/numbersArray', value: fixture.client.numbersArray }],
+        ['/numbersArray', { op: 'add', path: '/numbersArray/0', value: 0 }]
     );
 });
 
 test('ShallowArrayState remove field', (t) => {
     t.plan(1);
     const fixture = new FakeClientServer(ShallowArrayState);
-    const events = wireEvents(fixture.client, new RecordedEvents(), 'state');
+    const { events, clearCache } = wireEvents(fixture.client, new RecordedEvents());
+    events.onClear(clearCache);
+    fixture.sync();
+    events.clear();
+
     fixture.server.numbersArray[0] = 0;
     fixture.server.numbersArray[1] = 1;
     fixture.sync();
@@ -105,7 +122,7 @@ test('ShallowArrayState remove field', (t) => {
     fixture.sync();
     events.assertEvents(
         t,
-        ['state/numbersArray', { op: 'remove', path: 'state/numbersArray/1' }],
-        ['state/numbersArray', { op: 'remove', path: 'state/numbersArray/0' }]
+        ['/numbersArray', { op: 'remove', path: '/numbersArray/1' }],
+        ['/numbersArray', { op: 'remove', path: '/numbersArray/0' }]
     );
 });

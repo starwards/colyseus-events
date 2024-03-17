@@ -21,7 +21,7 @@ export const handleInner = Object.freeze({
             return false;
         }
         state.onChange(() => {
-            events.emit(namespace, Replace(namespace, state));
+            events.emit('special', Replace(namespace, state));
         });
         return true;
     },
@@ -32,7 +32,8 @@ test('custom visitor yields control gracefully', (t) => {
     t.plan(2);
 
     const fixture = new FakeClientServer(GameState);
-    const events = wireEvents(fixture.client, new RecordedEvents());
+    const { events, clearCache } = wireEvents(fixture.client, new RecordedEvents());
+    events.onClear(clearCache);
     fixture.sync();
     events.clear();
 
@@ -49,16 +50,17 @@ test('custom visitor changes events', (t) => {
     t.plan(2);
 
     const fixture = new FakeClientServer(GameState);
-    const events = wireEvents(fixture.client, new RecordedEvents());
+    const { events, clearCache } = wireEvents(fixture.client, new RecordedEvents());
+    events.onClear(clearCache);
     fixture.sync();
     events.clear();
 
     fixture.server.bar.x = 1;
     fixture.sync();
-    events.assertEvents(t, ['/bar', { op: 'replace', path: '/bar', value: fixture.client.bar }]);
+    events.assertEvents(t, ['special', { op: 'replace', path: '/bar', value: fixture.client.bar }]);
 
     fixture.server.bar.x = 2;
     fixture.server.bar.y = 2;
     fixture.sync();
-    events.assertEvents(t, ['/bar', { op: 'replace', path: '/bar', value: fixture.client.bar }]);
+    events.assertEvents(t, ['special', { op: 'replace', path: '/bar', value: fixture.client.bar }]);
 });

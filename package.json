@@ -29,10 +29,10 @@
         }
     },
     "peerDependencies": {
-        "@colyseus/schema": "1.x"
+        "@colyseus/schema": "2.x"
     },
     "devDependencies": {
-        "@colyseus/schema": "^1.0.41",
+        "@colyseus/schema": "^2.0.27",
         "@types/tape": "^4.13.2",
         "@typescript-eslint/eslint-plugin": "^5.29.0",
         "@typescript-eslint/parser": "^5.29.0",

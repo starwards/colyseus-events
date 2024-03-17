@@ -20,9 +20,9 @@ export const handleInner = Object.freeze({
         if (!(state instanceof Inner)) {
             return false;
         }
-        state.onChange = () => {
+        state.onChange(() => {
             events.emit(namespace, Replace(namespace, state));
-        };
+        });
         return true;
     },
 });

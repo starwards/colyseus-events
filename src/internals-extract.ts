@@ -13,3 +13,8 @@ export function extractCallbacks(obj: Container) {
     //@ts-ignore: the flag symbol is not part of T
     return obj.$callbacks as Callbacks | undefined;
 }
+
+export function getFieldsList<T extends Schema>(state: T): Exclude<keyof T, keyof Schema>[] {
+    // @ts-ignore: access _definition to get fields list
+    return Object.values(state._definition.fieldsByIndex);
+}

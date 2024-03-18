@@ -2,6 +2,7 @@ import { Add, Colyseus, Container, Events, Remove, Replace, Traverse, Visitor } 
 import { ArraySchema, MapSchema, Schema } from '@colyseus/schema';
 
 import { CallbacksCleanup } from './destructors';
+import { getFieldsList } from './internals-extract';
 
 export const handleSchema = Object.freeze({
     cache: new CallbacksCleanup(),
@@ -9,12 +10,10 @@ export const handleSchema = Object.freeze({
         if (!(state instanceof Schema)) {
             return false;
         }
-        // @ts-ignore: access _definition to get fields list
-        const fieldsList = Object.values(state._definition.fieldsByIndex);
         const destructors = this.cache.resetDestructors(state);
-        for (const field of fieldsList) {
-            const fieldNamespace = `${namespace}/${field}`;
-            const d = state.listen(field as never, (value, previousValue) => {
+        for (const field of getFieldsList(state)) {
+            const fieldNamespace = `${namespace}/${field as string}`;
+            const d = state.listen(field, (value, previousValue) => {
                 if (value === previousValue) return;
                 events.emit(fieldNamespace, Replace(fieldNamespace, value as Colyseus));
                 traverse(value as Colyseus, events, fieldNamespace);

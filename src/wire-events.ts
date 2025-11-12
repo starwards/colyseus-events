@@ -1,6 +1,8 @@
 import { Colyseus, Events, Visitor, isPrimitive } from './types';
 
 import { DeDupeEmitter } from './de-dupe-wrapper';
+import { Decoder } from '@colyseus/schema';
+import { Room } from 'colyseus.js';
 import { SymbolWeakSet } from './weak-set';
 import { coreVisitors } from './core-visitors';
 
@@ -19,7 +21,10 @@ export type WireEvents = ReturnType<typeof customWireEvents>;
  * @returns a customized `wireEvents` function
  */
 export function customWireEvents(visitors: Iterable<Visitor>) {
-    return function wireEvents<T extends Events>(root: Colyseus, userEvents: T, rootNamespace = '') {
+    return function wireEvents<T extends Events>(room: Room<Colyseus>, userEvents: T, rootNamespace = '') {
+        // @ts-expect-error accessing private Decoder
+        const decoder = room.serializer['decoder'] as Decoder;
+        const root = room.state;
         const wiredContainers = new SymbolWeakSet();
         function recursive(state: Colyseus, events: Events, namespace: string) {
             if (isPrimitive(state)) {

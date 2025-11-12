@@ -1,7 +1,7 @@
 {
     "files.autoSave": "afterDelay",
     "editor.codeActionsOnSave": {
-        "source.fixAll": true
+        "source.fixAll": "explicit"
     },
     "editor.formatOnSave": false,
     "[typescript]" : {

@@ -11,7 +11,7 @@ export class ShallowArrayState extends Schema {
 test('ShallowArrayState add field', (t) => {
     t.plan(1);
     const fixture = new FakeClientServer(ShallowArrayState);
-    const { events, clearCache } = wireEvents(fixture.client, new RecordedEvents());
+    const { events, clearCache } = wireEvents(fixture.room, new RecordedEvents());
     events.onClear(clearCache);
     fixture.sync();
     events.clear();
@@ -31,7 +31,7 @@ test('ShallowArrayState add field', (t) => {
 test('ShallowArrayState change field', (t) => {
     t.plan(1);
     const fixture = new FakeClientServer(ShallowArrayState);
-    const { events, clearCache } = wireEvents(fixture.client, new RecordedEvents());
+    const { events, clearCache } = wireEvents(fixture.room, new RecordedEvents());
     events.onClear(clearCache);
     fixture.sync();
     events.clear();
@@ -51,7 +51,7 @@ test('ShallowArrayState change field', (t) => {
 test('ShallowArrayState change array field with new state', (t) => {
     t.plan(1);
     const fixture = new FakeClientServer(ShallowArrayState);
-    const { events, clearCache } = wireEvents(fixture.client, new RecordedEvents());
+    const { events, clearCache } = wireEvents(fixture.room, new RecordedEvents());
     events.onClear(clearCache);
     fixture.sync();
     events.clear();
@@ -60,7 +60,7 @@ test('ShallowArrayState change array field with new state', (t) => {
     fixture.sync();
     events.assertEvents(
         t,
-        ['/numbersArray', { op: 'replace', path: '/numbersArray', value: fixture.client.numbersArray }],
+        ['/numbersArray', { op: 'replace', path: '/numbersArray', value: fixture.room.state.numbersArray }],
         ['/numbersArray', { op: 'add', path: '/numbersArray/0', value: 0 }]
     );
 });
@@ -68,7 +68,7 @@ test('ShallowArrayState change array field with new state', (t) => {
 test('ShallowArrayState change array field with previous state', (t) => {
     t.plan(1);
     const fixture = new FakeClientServer(ShallowArrayState);
-    const { events, clearCache } = wireEvents(fixture.client, new RecordedEvents());
+    const { events, clearCache } = wireEvents(fixture.room, new RecordedEvents());
     events.onClear(clearCache);
     fixture.server.numbersArray[0] = 0;
     fixture.sync();
@@ -79,14 +79,14 @@ test('ShallowArrayState change array field with previous state', (t) => {
     events.assertEvents(
         t,
         ['/numbersArray', { op: 'remove', path: '/numbersArray/0' }],
-        ['/numbersArray', { op: 'replace', path: '/numbersArray', value: fixture.client.numbersArray }]
+        ['/numbersArray', { op: 'replace', path: '/numbersArray', value: fixture.room.state.numbersArray }]
     );
 });
 
 test('ShallowArrayState change array field with same (previous and existing) state', (t) => {
     t.plan(1);
     const fixture = new FakeClientServer(ShallowArrayState);
-    const { events, clearCache } = wireEvents(fixture.client, new RecordedEvents());
+    const { events, clearCache } = wireEvents(fixture.room, new RecordedEvents());
     events.onClear(clearCache);
     fixture.server.numbersArray[0] = 0;
     fixture.sync();
@@ -97,7 +97,7 @@ test('ShallowArrayState change array field with same (previous and existing) sta
     events.assertEvents(
         t,
         ['/numbersArray', { op: 'remove', path: '/numbersArray/0' }],
-        ['/numbersArray', { op: 'replace', path: '/numbersArray', value: fixture.client.numbersArray }],
+        ['/numbersArray', { op: 'replace', path: '/numbersArray', value: fixture.room.state.numbersArray }],
         ['/numbersArray', { op: 'add', path: '/numbersArray/0', value: 0 }]
     );
 });
@@ -105,7 +105,7 @@ test('ShallowArrayState change array field with same (previous and existing) sta
 test('ShallowArrayState remove field', (t) => {
     t.plan(1);
     const fixture = new FakeClientServer(ShallowArrayState);
-    const { events, clearCache } = wireEvents(fixture.client, new RecordedEvents());
+    const { events, clearCache } = wireEvents(fixture.room, new RecordedEvents());
     events.onClear(clearCache);
     fixture.sync();
     events.clear();

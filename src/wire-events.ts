@@ -1,17 +1,21 @@
-import { Colyseus, Events, Visitor, isPrimitive } from './types';
+/* eslint-disable sort-imports */
+import { ColRoom, Colyseus, Events, Visitor, isPrimitive } from './types';
 
 import { DeDupeEmitter } from './de-dupe-wrapper';
 import { Decoder } from '@colyseus/schema';
-import { Room } from 'colyseus.js';
 import { SymbolWeakSet } from './weak-set';
 import { coreVisitors } from './core-visitors';
+import { getStateCallbacks } from 'colyseus.js';
+
+/* eslint-enable sort-imports */
 
 /**
- * make every change in Colyseus state trigger an event in the EventEmitter using the provided namespace.
- * @param state Colyseus state to track
+ * make every change in Colyseus room state trigger an event in the EventEmitter using the provided namespace.
+ * @param state Root Colyseus state object (Schema instance)
+ * @param callbackProxy Callback proxy obtained from getStateCallbacks(room) in colyseus.js
  * @param events EventsEmitter of you choice. has to at least have the method `emit(eventName, value)`.
  * @param namespace (optional) Prefix of json pointer
- * @returns the provided events emitter (2nd argument)
+ * @returns the provided events emitter (3rd argument)
  */
 export type WireEvents = ReturnType<typeof customWireEvents>;
 
@@ -21,38 +25,47 @@ export type WireEvents = ReturnType<typeof customWireEvents>;
  * @returns a customized `wireEvents` function
  */
 export function customWireEvents(visitors: Iterable<Visitor>) {
-    return function wireEvents<T extends Events>(room: Room<Colyseus>, userEvents: T, rootNamespace = '') {
+    return function wireEvents<T extends Events>(room: ColRoom<Colyseus>, userEvents: T, rootNamespace = '') {
         // @ts-expect-error accessing private Decoder
         const decoder = room.serializer['decoder'] as Decoder;
-        const root = room.state;
+        const state = room.state;
         const wiredContainers = new SymbolWeakSet();
-        function recursive(state: Colyseus, events: Events, namespace: string) {
-            if (isPrimitive(state)) {
+
+        // Get callback proxy from room
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any, @typescript-eslint/no-unsafe-argument
+        const callbackProxy = getStateCallbacks(room as any);
+
+        function recursive(node: Colyseus, events: Events, namespace: string) {
+            if (isPrimitive(node)) {
                 return events;
             }
-            if (wiredContainers.has(state)) {
+            if (wiredContainers.has(node)) {
                 return events;
             }
-            wiredContainers.add(state);
+            wiredContainers.add(node);
             for (const ch of visitors) {
-                if (ch.visit(recursive, state, events, namespace)) {
+                if (ch.visit(recursive, node, events, namespace, callbackProxy)) {
                     return events;
                 }
             }
             return events;
         }
+
         const dedupedEvents = new DeDupeEmitter(userEvents);
-        recursive(root, dedupedEvents, rootNamespace);
+
+        // Initial wiring
+        recursive(state, dedupedEvents, rootNamespace);
         return { events: userEvents, clearCache: dedupedEvents.clearCache };
     };
 }
 
 /**
- * make every change in Colyseus state trigger an event in the EventEmitter using the provided namespace.
+ * make every change in Colyseus room state trigger an event in the EventEmitter using the provided namespace.
  * Only handle vanilla Colyseus types : Schema, ArraySchema, MapSchema. To add special behavior for custom types, use `customWireEvents()`
- * @param state Colyseus state to track
+ * @param state Root Colyseus state object (Schema instance)
+ * @param callbackProxy Callback proxy obtained from getStateCallbacks(room) in colyseus.js
  * @param events EventsEmitter of you choice. has to at least have the method `emit(eventName, value)`.
  * @param namespace (optional) Prefix of json pointer
- * @returns the provided events emitter (2nd argument)
+ * @returns the provided events emitter (3rd argument)
  */
 export const wireEvents = customWireEvents(coreVisitors);

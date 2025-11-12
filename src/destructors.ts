@@ -28,6 +28,7 @@ export class CallbacksCleanup {
     recheckCallbacks(state: Container) {
         const dByState = this.cacheByState.get(state);
         if (dByState) {
+            // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
             const cb = extractCallbacks(state);
             if (cb) {
                 this.cacheByCallbacks.set(cb, dByState);
@@ -38,6 +39,7 @@ export class CallbacksCleanup {
 
     resetDestructors(state: Container) {
         const dByState = this.cacheByState.get(state);
+        // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
         const cb = extractCallbacks(state);
         if (cb) {
             if (dByState) {

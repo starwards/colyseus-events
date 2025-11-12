@@ -1,20 +1,36 @@
-import { ArraySchema, CollectionSchema, MapSchema, Schema, SetSchema } from '@colyseus/schema';
-
 import { Container } from './types';
+import { NonFunctionPropNames } from '@colyseus/schema/lib/types/HelperTypes';
+import { Schema } from '@colyseus/schema';
 
-export type Callbacks =
-    | Schema['$callbacks']
-    | ArraySchema['$callbacks']
-    | MapSchema['$callbacks']
-    | CollectionSchema['$callbacks']
-    | SetSchema['$callbacks'];
+// Internal callbacks type - using any since $callbacks is not exposed in public types
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+export type Callbacks = any;
 
 export function extractCallbacks(obj: Container) {
-    //@ts-ignore: the flag symbol is not part of T
+    // @ts-ignore: access internal $callbacks property
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-return
     return obj.$callbacks as Callbacks | undefined;
 }
 
-export function getFieldsList<T extends Schema>(state: T): Exclude<keyof T, keyof Schema>[] {
-    // @ts-ignore: access _definition to get fields list
-    return Object.values(state._definition.fieldsByIndex);
+export function getFieldsList<T extends Schema>(state: T): NonFunctionPropNames<T>[] {
+    // v3 API: Symbol.metadata on constructor
+    // @ts-ignore: access Symbol.metadata
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-member-access
+    const metadata = state.constructor[Symbol.metadata];
+    if (metadata) {
+        const fields: (keyof T)[] = [];
+        for (const index in metadata) {
+            // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-member-access
+            const field = metadata[index];
+            // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
+            if (field && field.name && !field.deprecated) {
+                // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
+                fields.push(field.name as keyof T);
+            }
+        }
+        return fields as NonFunctionPropNames<T>[];
+    }
+
+    // If metadata is not available, return empty array (should not happen in normal usage)
+    return [];
 }

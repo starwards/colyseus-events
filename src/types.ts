@@ -1,13 +1,36 @@
-import { ArraySchema, CollectionSchema, MapSchema, Schema, SetSchema } from '@colyseus/schema';
+import {
+    ArraySchema,
+    CollectionSchema,
+    MapSchema,
+    Schema,
+    type SchemaCallbackProxy,
+    SetSchema,
+} from '@colyseus/schema';
 
 export type Primitive = number | string | boolean | null | undefined;
 export type Container = Schema | ArraySchema | MapSchema | CollectionSchema | SetSchema;
 export type Colyseus = Primitive | Container;
 
+/**
+ * Minimal Colyseus Room interface for wireEvents
+ */
+export interface ColRoom<T = unknown> {
+    state: T;
+    serializer: unknown;
+}
+
 export function isPrimitive(val: unknown): val is Primitive {
     return typeof val !== 'object' || !val;
 }
-
+export function isContainer(val: unknown): val is Container {
+    return (
+        val instanceof Schema ||
+        val instanceof ArraySchema ||
+        val instanceof MapSchema ||
+        val instanceof CollectionSchema ||
+        val instanceof SetSchema
+    );
+}
 export interface Events<E = string> {
     emit(eventName: E, value: Event): unknown;
 }
@@ -34,7 +57,12 @@ export function Remove(path: string): Remove {
     return { op: 'remove', path };
 }
 
-export type Traverse<T extends Events = Events> = (state: Colyseus, events: T, jsonPath: string) => unknown;
+export type Traverse<T extends Events = Events> = (
+    state: Colyseus,
+    events: T,
+    jsonPath: string,
+    callbackProxy: SchemaCallbackProxy<unknown>
+) => unknown;
 
 /**
  * logic to wire events for a single entity type
@@ -46,7 +74,14 @@ export type Visitor = {
      * @param state the state container
      * @param events events emitter to emit events on
      * @param jsonPath the path of the current state container
+     * @param callbackProxy the callback proxy function for registering callbacks on state
      * @return `true` if this visitor wired and traversed the current `state`. Otherwise do nothing and treturn `false`.
      */
-    visit(traverse: Traverse, state: Container, events: Events, jsonPath: string): boolean;
+    visit(
+        traverse: Traverse,
+        state: Container,
+        events: Events,
+        jsonPath: string,
+        callbackProxy: SchemaCallbackProxy<unknown>
+    ): boolean;
 };

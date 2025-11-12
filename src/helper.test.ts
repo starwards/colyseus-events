@@ -1,32 +1,51 @@
 import { Event } from '.';
-import { Schema } from '@colyseus/schema';
+// eslint-disable-next-line sort-imports
+import { Decoder, Encoder, Schema } from '@colyseus/schema';
+import { Room, getStateCallbacks } from 'colyseus.js';
 import { Test } from 'tape';
+
+// Re-export getStateCallbacks for use in tests
+export { getStateCallbacks };
 
 /**
  * manage the state we need for a simple test
  * simulate the wiring that colyseus is suppoed to do in a real environment
  */
-export class FakeClientServer<T> {
+export class FakeClientServer<T extends Schema> {
     /**
      * represents the state of the server room
      */
-    server: T & Schema;
+    server: T;
     /**
-     * represents the colyseus state of the client
+     * represents the colyseus client room (with state and decoder)
      */
-    client: T & Schema;
+    room: Room<T>;
 
-    constructor(constructor: new () => T & Schema) {
+    private encoder: Encoder;
+    private decoder: Decoder;
+
+    constructor(constructor: new () => T) {
         this.server = new constructor();
-        this.client = new constructor();
-        this.client.decode(this.server.encodeAll());
+        const client = new constructor();
+        this.encoder = new Encoder(this.server);
+        this.decoder = new Decoder(client);
+        this.decoder.decode(this.encoder.encodeAll());
+
+        // Create a mock room object that has state and serializer for getStateCallbacks
+        // getStateCallbacks() expects room.serializer.decoder to exist
+        this.room = {
+            state: client,
+            serializer: {
+                decoder: this.decoder,
+            },
+        } as unknown as Room<T>;
     }
 
     /**
      * update the client after changes are made to the server state
      */
     sync() {
-        this.client.decode(this.server.encode());
+        this.decoder.decode(this.encoder.encode());
     }
 }
 

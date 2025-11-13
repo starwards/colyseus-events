@@ -143,30 +143,36 @@ export function getDecoderStateCallbacks<T extends Schema>(decoder: Decoder<T>):
             }
 
             if (ref instanceof Schema) {
-                //
-                // Handle schema instance
-                //
+                const isDifferent =
+                    typeof change.value !== 'object' ||
+                    typeof change.previousValue !== 'object' ||
+                    $root.refIds.get(change.previousValue) !== $root.refIds.get(change.value);
+                if (isDifferent) {
+                    //
+                    // Handle schema instance
+                    //
 
-                if (!uniqueRefIds.has(refId)) {
-                    // trigger onChange
-                    const replaceCallbacks = $callbacks?.[OPERATION.REPLACE];
-                    for (let i = replaceCallbacks?.length - 1; i >= 0; i--) {
-                        replaceCallbacks[i]();
-                        // try {
-                        // } catch (e) {
-                        //     console.error(e);
-                        // }
+                    if (!uniqueRefIds.has(refId)) {
+                        // trigger onChange
+                        const replaceCallbacks = $callbacks?.[OPERATION.REPLACE];
+                        for (let i = replaceCallbacks?.length - 1; i >= 0; i--) {
+                            replaceCallbacks[i]();
+                            // try {
+                            // } catch (e) {
+                            //     console.error(e);
+                            // }
+                        }
                     }
-                }
 
-                if ($callbacks.hasOwnProperty(change.field)) {
-                    const fieldCallbacks = $callbacks[change.field];
-                    for (let i = fieldCallbacks?.length - 1; i >= 0; i--) {
-                        fieldCallbacks[i](change.value, change.previousValue);
-                        // try {
-                        // } catch (e) {
-                        //     console.error(e);
-                        // }
+                    if ($callbacks.hasOwnProperty(change.field)) {
+                        const fieldCallbacks = $callbacks[change.field];
+                        for (let i = fieldCallbacks?.length - 1; i >= 0; i--) {
+                            fieldCallbacks[i](change.value, change.previousValue);
+                            // try {
+                            // } catch (e) {
+                            //     console.error(e);
+                            // }
+                        }
                     }
                 }
             } else {

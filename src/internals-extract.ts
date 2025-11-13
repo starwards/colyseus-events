@@ -1,16 +1,5 @@
-import { Container } from './types';
 import { NonFunctionPropNames } from '@colyseus/schema/lib/types/HelperTypes';
 import { Schema } from '@colyseus/schema';
-
-// Internal callbacks type - using any since $callbacks is not exposed in public types
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-export type Callbacks = any;
-
-export function extractCallbacks(obj: Container) {
-    // @ts-ignore: access internal $callbacks property
-    // eslint-disable-next-line @typescript-eslint/no-unsafe-return
-    return obj.$callbacks as Callbacks | undefined;
-}
 
 export function getFieldsList<T extends Schema>(state: T): NonFunctionPropNames<T>[] {
     // v3 API: Symbol.metadata on constructor

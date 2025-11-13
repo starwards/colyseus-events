@@ -1,5 +1,3 @@
-import { Callbacks, extractCallbacks } from './internals-extract';
-
 import { Container } from './types';
 
 export type Destructor = () => unknown;
@@ -22,39 +20,10 @@ export class Destructors {
 }
 
 export class CallbacksCleanup {
-    private cacheByCallbacks = new WeakMap<Callbacks, Destructors>();
     private cacheByState = new WeakMap<Container, Destructors>();
-
-    recheckCallbacks(state: Container) {
-        const dByState = this.cacheByState.get(state);
-        if (dByState) {
-            // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
-            const cb = extractCallbacks(state);
-            if (cb) {
-                this.cacheByCallbacks.set(cb, dByState);
-                this.cacheByState.delete(state);
-            }
-        }
-    }
 
     resetDestructors(state: Container) {
         const dByState = this.cacheByState.get(state);
-        // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
-        const cb = extractCallbacks(state);
-        if (cb) {
-            if (dByState) {
-                this.cacheByCallbacks.set(cb, dByState);
-                this.cacheByState.delete(state);
-            }
-            const d = this.cacheByCallbacks.get(cb);
-            if (d) {
-                d.cleanup();
-                return d;
-            }
-            const newD = new Destructors();
-            this.cacheByCallbacks.set(cb, newD);
-            return newD;
-        }
         const newD = dByState || new Destructors();
         this.cacheByState.set(state, newD);
         newD.cleanup();

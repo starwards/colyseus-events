@@ -5,7 +5,7 @@ import { DeDupeEmitter } from './de-dupe-wrapper';
 import { Decoder } from '@colyseus/schema';
 import { SymbolWeakSet } from './weak-set';
 import { coreVisitors } from './core-visitors';
-import { getStateCallbacks } from 'colyseus.js';
+import { getDecoderStateCallbacks } from './fork/getDecoderStateCallbacks';
 
 /* eslint-enable sort-imports */
 
@@ -32,8 +32,7 @@ export function customWireEvents(visitors: Iterable<Visitor>) {
         const wiredContainers = new SymbolWeakSet();
 
         // Get callback proxy from room
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any, @typescript-eslint/no-unsafe-argument
-        const callbackProxy = getStateCallbacks(room as any);
+        const callbackProxy = getDecoderStateCallbacks(decoder);
 
         function recursive(node: Colyseus, events: Events, namespace: string) {
             if (isPrimitive(node)) {

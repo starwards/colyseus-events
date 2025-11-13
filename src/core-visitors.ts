@@ -25,36 +25,26 @@ export const handleSchema = Object.freeze({
             // Always traverse initial value to wire up nested callbacks
             traverse(initialValue, events, fieldNamespace, callbackProxy);
 
-            // Skip .listen() for collection fields
-            // In v3, we cannot reliably detect collection field replacements because:
-            // 1. .listen() fires for both element changes AND field replacement
-            // 2. There's no way to distinguish between them
-            // Element changes are handled by the collection's own onAdd/onChange/onRemove callbacks
-            // Field replacements are not detected (known limitation in v4.0)
-            const isCollection = initialValue instanceof ArraySchema || initialValue instanceof MapSchema;
-            if (isCollection) {
-                continue;
-            }
+            destructors.add(
+                // @ts-expect-error - TypeScript has trouble with union types for overloaded .listen() method
+                $.listen(
+                    field,
+                    (value: unknown, previousValue: unknown) => {
+                        if (value === previousValue) return;
 
-            // Register .listen() for non-collection fields (primitives and nested Schema objects)
-            // @ts-expect-error - TypeScript has trouble with union types for overloaded .listen() method
-            // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
-            const cleanup = $.listen(field, (value: unknown, previousValue: unknown) => {
-                if (value === previousValue) return;
+                        // Clean up old Schema on replacement
+                        const isPrevSchema = previousValue instanceof Schema;
+                        if (isPrevSchema) {
+                            this.cache.resetDestructors(previousValue as Container);
+                        }
 
-                // Clean up old Schema on replacement
-                const isPrevSchema = previousValue instanceof Schema;
-                if (isPrevSchema) {
-                    this.cache.resetDestructors(previousValue as Container);
-                }
-
-                events.emit(fieldNamespace, Replace(fieldNamespace, value as Colyseus));
-                traverse(value as Colyseus, events, fieldNamespace, callbackProxy);
-            });
-            // eslint-disable-next-line @typescript-eslint/no-unsafe-argument
-            destructors.add(cleanup);
+                        events.emit(fieldNamespace, Replace(fieldNamespace, value as Colyseus));
+                        traverse(value as Colyseus, events, fieldNamespace, callbackProxy);
+                    },
+                    false
+                ) as () => void
+            );
         }
-        this.cache.recheckCallbacks(state);
         return true;
     },
 });
@@ -88,21 +78,22 @@ export const handleArraySchema = Object.freeze({
                     events.emit(namespace, Add(fieldNamespace, value as Colyseus));
                 }
                 traverse(value as Colyseus, events, fieldNamespace, callbackProxy);
+            }, false)
+        );
+        destructors.add(
+            $.onChange((value: unknown, field: unknown) => {
+                const fieldNum = field as number;
+                if (knownChanges.has(fieldNum)) {
+                    // We've seen onChange for this index before, so it's a real change
+                    const fieldNamespace = `${namespace}/${fieldNum}`;
+                    events.emit(fieldNamespace, Replace(fieldNamespace, value as Colyseus));
+                    traverse(value as Colyseus, events, fieldNamespace, callbackProxy);
+                } else {
+                    // First onChange for this index - this fires after onAdd, so skip it
+                    knownChanges.add(fieldNum);
+                }
             })
         );
-        // onChange returns void in v3, so we don't capture its return value
-        $.onChange((value: unknown, field: unknown) => {
-            const fieldNum = field as number;
-            if (knownChanges.has(fieldNum)) {
-                // We've seen onChange for this index before, so it's a real change
-                const fieldNamespace = `${namespace}/${fieldNum}`;
-                events.emit(fieldNamespace, Replace(fieldNamespace, value as Colyseus));
-                traverse(value as Colyseus, events, fieldNamespace, callbackProxy);
-            } else {
-                // First onChange for this index - this fires after onAdd, so skip it
-                knownChanges.add(fieldNum);
-            }
-        });
         destructors.add(
             $.onRemove((_: unknown, field: unknown) => {
                 const fieldNum = field as number;
@@ -112,7 +103,6 @@ export const handleArraySchema = Object.freeze({
                 events.emit(namespace, Remove(fieldNamespace));
             })
         );
-        this.cache.recheckCallbacks(state);
         return true;
     },
 });
@@ -148,21 +138,23 @@ export const handleMapSchema = Object.freeze({
                     events.emit(namespace, Add(fieldNamespace, value as Colyseus));
                 }
                 traverse(value as Colyseus, events, fieldNamespace, callbackProxy);
-            })
+            }, false)
         );
         // onChange returns void in v3, so we don't capture its return value
-        $.onChange((value: unknown, field: unknown) => {
-            const fieldStr = field as string;
-            if (knownChanges.has(fieldStr)) {
-                // We've seen onChange for this key before, so it's a real change
-                const fieldNamespace = `${namespace}/${fieldStr}`;
-                events.emit(fieldNamespace, Replace(fieldNamespace, value as Colyseus));
-                traverse(value as Colyseus, events, fieldNamespace, callbackProxy);
-            } else {
-                // First onChange for this key - this fires after onAdd, so skip it
-                knownChanges.add(fieldStr);
-            }
-        });
+        destructors.add(
+            $.onChange((value: unknown, field: unknown) => {
+                const fieldStr = field as string;
+                if (knownChanges.has(fieldStr)) {
+                    // We've seen onChange for this key before, so it's a real change
+                    const fieldNamespace = `${namespace}/${fieldStr}`;
+                    events.emit(fieldNamespace, Replace(fieldNamespace, value as Colyseus));
+                    traverse(value as Colyseus, events, fieldNamespace, callbackProxy);
+                } else {
+                    // First onChange for this key - this fires after onAdd, so skip it
+                    knownChanges.add(fieldStr);
+                }
+            })
+        );
         destructors.add(
             $.onRemove((_: unknown, field: unknown) => {
                 const fieldStr = field as string;
@@ -172,7 +164,6 @@ export const handleMapSchema = Object.freeze({
                 events.emit(namespace, Remove(fieldNamespace));
             })
         );
-        this.cache.recheckCallbacks(state);
         return true;
     },
 });

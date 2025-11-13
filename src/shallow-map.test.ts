@@ -24,7 +24,7 @@ test('ShallowMapState add field', (t) => {
     events.assertEvents(
         t,
         ['/mapNumbers', { op: 'add', path: '/mapNumbers/1', value: 1 }],
-        ['/mapNumbers', { op: 'add', path: '/mapNumbers/2', value: 2 }]
+        ['/mapNumbers', { op: 'add', path: '/mapNumbers/2', value: 2 }],
     );
 });
 
@@ -44,7 +44,7 @@ test('ShallowMapState change field', (t) => {
     events.assertEvents(
         t,
         ['/mapNumbers', { op: 'add', path: '/mapNumbers/1', value: 1 }],
-        ['/mapNumbers/1', { op: 'replace', path: '/mapNumbers/1', value: 2 }]
+        ['/mapNumbers/1', { op: 'replace', path: '/mapNumbers/1', value: 2 }],
     );
 });
 
@@ -62,7 +62,7 @@ test('ShallowMapState change map field with new state', (t) => {
     events.assertEvents(
         t,
         ['/mapNumbers', { op: 'replace', path: '/mapNumbers', value: fixture.room.state.mapNumbers }],
-        ['/mapNumbers', { op: 'add', path: '/mapNumbers/1', value: 1 }]
+        ['/mapNumbers', { op: 'add', path: '/mapNumbers/1', value: 1 }],
     );
 });
 
@@ -81,7 +81,7 @@ test('ShallowMapState change map field with previous state', (t) => {
     events.assertEvents(
         t,
         ['/mapNumbers', { op: 'remove', path: '/mapNumbers/1' }],
-        ['/mapNumbers', { op: 'replace', path: '/mapNumbers', value: fixture.room.state.mapNumbers }]
+        ['/mapNumbers', { op: 'replace', path: '/mapNumbers', value: fixture.room.state.mapNumbers }],
     );
 });
 
@@ -101,7 +101,7 @@ test('ShallowMapState change map field with same (previous and existing) state',
         t,
         ['/mapNumbers', { op: 'remove', path: '/mapNumbers/1' }],
         ['/mapNumbers', { op: 'replace', path: '/mapNumbers', value: fixture.room.state.mapNumbers }],
-        ['/mapNumbers', { op: 'add', path: '/mapNumbers/1', value: 1 }]
+        ['/mapNumbers', { op: 'add', path: '/mapNumbers/1', value: 1 }],
     );
 });
 
@@ -123,6 +123,6 @@ test('ShallowMapState remove field', (t) => {
     events.assertEvents(
         t,
         ['/mapNumbers', { op: 'remove', path: '/mapNumbers/1' }],
-        ['/mapNumbers', { op: 'remove', path: '/mapNumbers/2' }]
+        ['/mapNumbers', { op: 'remove', path: '/mapNumbers/2' }],
     );
 });

@@ -61,7 +61,7 @@ export type Traverse<T extends Events = Events> = (
     state: Colyseus,
     events: T,
     jsonPath: string,
-    callbackProxy: SchemaCallbackProxy<unknown>
+    callbackProxy: SchemaCallbackProxy<unknown>,
 ) => unknown;
 
 /**
@@ -82,6 +82,6 @@ export type Visitor = {
         state: Container,
         events: Events,
         jsonPath: string,
-        callbackProxy: SchemaCallbackProxy<unknown>
+        callbackProxy: SchemaCallbackProxy<unknown>,
     ): boolean;
 };

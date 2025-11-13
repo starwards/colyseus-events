@@ -1,13 +1,11 @@
+/* eslint-disable @typescript-eslint/no-unsafe-enum-comparison, @typescript-eslint/no-unsafe-function-type, @typescript-eslint/no-explicit-any, @typescript-eslint/init-declarations, @typescript-eslint/no-shadow, no-prototype-builtins, @typescript-eslint/no-empty-function, @typescript-eslint/no-unsafe-argument, @typescript-eslint/no-unsafe-return, @typescript-eslint/no-unsafe-call, @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-unsafe-assignment, prefer-const, @typescript-eslint/no-inferrable-types, @typescript-eslint/no-unnecessary-type-assertion, @typescript-eslint/no-non-null-assertion */
 import {
     Collection,
     NonFunctionNonPrimitivePropNames,
     NonFunctionPropNames,
 } from '@colyseus/schema/lib/types/HelperTypes';
-/* eslint-disable sort-imports, @typescript-eslint/no-explicit-any, @typescript-eslint/ban-types, @typescript-eslint/init-declarations, @typescript-eslint/no-shadow, no-prototype-builtins, @typescript-eslint/no-empty-function, @typescript-eslint/no-unsafe-argument, @typescript-eslint/no-unsafe-return, @typescript-eslint/no-unsafe-call, @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-unsafe-assignment, prefer-const, @typescript-eslint/no-inferrable-types, @typescript-eslint/no-unnecessary-type-assertion, @typescript-eslint/no-non-null-assertion */
 import type { CollectionSchema, DefinitionType } from '@colyseus/schema';
 import { DataChange, Decoder, Metadata, OPERATION, Ref, Schema } from '@colyseus/schema';
-
-/* eslint-enable sort-imports */
 
 //
 // Discussion: https://github.com/colyseus/schema/issues/155
@@ -32,8 +30,8 @@ export type GetCallbackProxy = SchemaCallbackProxy<any>; // workaround for compa
 export type CallbackProxy<T> = unknown extends T // is "any"?
     ? SchemaCallback<T> & CollectionCallback<any, any>
     : T extends Collection<infer K, infer V, infer _>
-    ? CollectionCallback<K, V>
-    : SchemaCallback<T>;
+      ? CollectionCallback<K, V>
+      : SchemaCallback<T>;
 
 export type SchemaCallback<T> = {
     /**
@@ -47,7 +45,7 @@ export type SchemaCallback<T> = {
     listen<K extends NonFunctionPropNames<T>>(
         prop: K,
         callback: (value: T[K], previousValue: T[K]) => void,
-        immediate?: boolean
+        immediate?: boolean,
     ): () => void;
 
     /**
@@ -236,7 +234,7 @@ export function getDecoderStateCallbacks<T extends Schema>(decoder: Decoder<T>):
                 ref: Ref,
                 prop: string,
                 callback: (value: any, previousValue: any) => void,
-                immediate: boolean
+                immediate: boolean,
             ) {
                 // immediate trigger
                 if (
@@ -261,7 +259,7 @@ export function getDecoderStateCallbacks<T extends Schema>(decoder: Decoder<T>):
                     listen: function listen(
                         prop: string,
                         callback: (value: any, previousValue: any) => void,
-                        immediate: boolean = true
+                        immediate: boolean = true,
                     ) {
                         if (context.instance) {
                             return onAddListen(context.instance, prop, callback, immediate);
@@ -276,7 +274,7 @@ export function getDecoderStateCallbacks<T extends Schema>(decoder: Decoder<T>):
                                     callback,
                                     immediate &&
                                         existing &&
-                                        (!currentOnAddCallback || !onAddCalls.has(currentOnAddCallback))
+                                        (!currentOnAddCallback || !onAddCalls.has(currentOnAddCallback)),
                                 );
                             });
 
@@ -315,7 +313,7 @@ export function getDecoderStateCallbacks<T extends Schema>(decoder: Decoder<T>):
                         if (metadataField) {
                             const instance = context.instance?.[prop];
                             const onInstanceAvailable: OnInstanceAvailableCallback = (
-                                callback: (ref: Ref, existing: boolean) => void
+                                callback: (ref: Ref, existing: boolean) => void,
                             ) => {
                                 const unbind = $(context.instance).listen(
                                     prop,
@@ -328,7 +326,7 @@ export function getDecoderStateCallbacks<T extends Schema>(decoder: Decoder<T>):
                                         //
                                         unbind?.();
                                     },
-                                    false
+                                    false,
                                 );
 
                                 // has existing value
@@ -357,7 +355,7 @@ export function getDecoderStateCallbacks<T extends Schema>(decoder: Decoder<T>):
                     deleteProperty(_, _1) {
                         throw new Error('not allowed');
                     },
-                }
+                },
             );
         } else {
             /**
@@ -412,7 +410,7 @@ export function getDecoderStateCallbacks<T extends Schema>(decoder: Decoder<T>):
                             return onAdd(
                                 context.instance,
                                 callback,
-                                immediate && !onAddCalls.has(currentOnAddCallback!)
+                                immediate && !onAddCalls.has(currentOnAddCallback!),
                             );
                         } else if (context.onInstanceAvailable) {
                             // collection instance not received yet
@@ -422,7 +420,7 @@ export function getDecoderStateCallbacks<T extends Schema>(decoder: Decoder<T>):
                                 detachCallback = onAdd(
                                     ref,
                                     callback,
-                                    immediate && existing && !onAddCalls.has(currentOnAddCallback!)
+                                    immediate && existing && !onAddCalls.has(currentOnAddCallback!),
                                 );
                             });
 
@@ -468,7 +466,7 @@ export function getDecoderStateCallbacks<T extends Schema>(decoder: Decoder<T>):
                     get(target, prop: string) {
                         if (!target[prop as keyof typeof target]) {
                             throw new Error(
-                                `Can't access '${prop}' through callback proxy. access the instance directly.`
+                                `Can't access '${prop}' through callback proxy. access the instance directly.`,
                             );
                         }
                         return target[prop as keyof typeof target];
@@ -482,7 +480,7 @@ export function getDecoderStateCallbacks<T extends Schema>(decoder: Decoder<T>):
                     deleteProperty(_, _1) {
                         throw new Error('not allowed');
                     },
-                }
+                },
             );
         }
     }

@@ -21,7 +21,7 @@ export const handleInner = Object.freeze({
         state: Container,
         events: Events,
         namespace: string,
-        callbackProxy: SchemaCallbackProxy<unknown>
+        callbackProxy: SchemaCallbackProxy<unknown>,
     ) => {
         if (!(state instanceof Inner)) {
             return false;

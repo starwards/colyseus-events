@@ -4,7 +4,10 @@ export class DeDupeEmitter<E extends string> implements Events<E> {
     private cache = new Map<E, Event>();
     private keyOrder: E[] = [];
 
-    constructor(private inner: Events<E>, private limit = 100) {}
+    constructor(
+        private inner: Events<E>,
+        private limit = 100,
+    ) {}
 
     clearCache = () => {
         this.cache.clear();

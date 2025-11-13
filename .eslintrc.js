@@ -30,16 +30,6 @@ module.exports = {
                 '@typescript-eslint/explicit-module-boundary-types': 'off',
                 '@typescript-eslint/no-use-before-define': 'off',
                 '@typescript-eslint/no-unused-vars': 'off',
-                'comma-dangle': [
-                    'error',
-                    {
-                        arrays: 'always-multiline',
-                        objects: 'always-multiline',
-                        imports: 'always-multiline',
-                        exports: 'always-multiline',
-                        functions: 'never',
-                    },
-                ],
                 // note you must disable the base rule as it can report incorrect errors
                 'init-declarations': 'off',
                 '@typescript-eslint/init-declarations': ['error', 'always'],

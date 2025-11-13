@@ -48,7 +48,7 @@ test('DeepState change field deep', (t) => {
     events.assertEvents(
         t,
         ['/child/foo', { op: 'replace', path: '/child/foo', value: 1 }],
-        ['/child/foo', { op: 'replace', path: '/child/foo', value: 2 }]
+        ['/child/foo', { op: 'replace', path: '/child/foo', value: 2 }],
     );
 });
 
@@ -73,7 +73,7 @@ test('DeepState change field with deep value', (t) => {
     events.assertEvents(
         t,
         ['/child', { op: 'replace', path: '/child', value: fixture.room.state.child! }],
-        ['/child/foo', { op: 'replace', path: '/child/foo', value: 1 }]
+        ['/child/foo', { op: 'replace', path: '/child/foo', value: 1 }],
     );
 
     fixture.server.child = child2;
@@ -81,6 +81,6 @@ test('DeepState change field with deep value', (t) => {
     events.assertEvents(
         t,
         ['/child', { op: 'replace', path: '/child', value: fixture.room.state.child! }],
-        ['/child/foo', { op: 'replace', path: '/child/foo', value: 2 }]
+        ['/child/foo', { op: 'replace', path: '/child/foo', value: 2 }],
     );
 });

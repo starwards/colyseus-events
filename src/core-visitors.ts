@@ -11,7 +11,7 @@ export const handleSchema = Object.freeze({
         state: T,
         events: Events,
         namespace: string,
-        callbackProxy: SchemaCallbackProxy<unknown>
+        callbackProxy: SchemaCallbackProxy<unknown>,
     ) {
         if (!(state instanceof Schema)) {
             return false;
@@ -41,8 +41,8 @@ export const handleSchema = Object.freeze({
                         events.emit(fieldNamespace, Replace(fieldNamespace, value as Colyseus));
                         traverse(value as Colyseus, events, fieldNamespace, callbackProxy);
                     },
-                    false
-                ) as () => void
+                    false,
+                ) as () => void,
             );
         }
         return true;
@@ -56,7 +56,7 @@ export const handleArraySchema = Object.freeze({
         state: ArraySchema<T>,
         events: Events,
         namespace: string,
-        callbackProxy: SchemaCallbackProxy<unknown>
+        callbackProxy: SchemaCallbackProxy<unknown>,
     ) {
         if (!(state instanceof ArraySchema)) {
             return false;
@@ -78,7 +78,7 @@ export const handleArraySchema = Object.freeze({
                     events.emit(namespace, Add(fieldNamespace, value as Colyseus));
                 }
                 traverse(value as Colyseus, events, fieldNamespace, callbackProxy);
-            }, false)
+            }, false),
         );
         destructors.add(
             $.onChange((value: unknown, field: unknown) => {
@@ -92,7 +92,7 @@ export const handleArraySchema = Object.freeze({
                     // First onChange for this index - this fires after onAdd, so skip it
                     knownChanges.add(fieldNum);
                 }
-            })
+            }),
         );
         destructors.add(
             $.onRemove((_: unknown, field: unknown) => {
@@ -101,7 +101,7 @@ export const handleArraySchema = Object.freeze({
                 knownChanges.delete(fieldNum);
                 const fieldNamespace = `${namespace}/${fieldNum}`;
                 events.emit(namespace, Remove(fieldNamespace));
-            })
+            }),
         );
         return true;
     },
@@ -114,7 +114,7 @@ export const handleMapSchema = Object.freeze({
         state: MapSchema<T>,
         events: Events,
         namespace: string,
-        callbackProxy: SchemaCallbackProxy<unknown>
+        callbackProxy: SchemaCallbackProxy<unknown>,
     ) {
         // Check if it is going to handle the state object, and return `false` if not.
         if (!(state instanceof MapSchema)) {
@@ -138,7 +138,7 @@ export const handleMapSchema = Object.freeze({
                     events.emit(namespace, Add(fieldNamespace, value as Colyseus));
                 }
                 traverse(value as Colyseus, events, fieldNamespace, callbackProxy);
-            }, false)
+            }, false),
         );
         // onChange returns void in v3, so we don't capture its return value
         destructors.add(
@@ -153,7 +153,7 @@ export const handleMapSchema = Object.freeze({
                     // First onChange for this key - this fires after onAdd, so skip it
                     knownChanges.add(fieldStr);
                 }
-            })
+            }),
         );
         destructors.add(
             $.onRemove((_: unknown, field: unknown) => {
@@ -162,7 +162,7 @@ export const handleMapSchema = Object.freeze({
                 knownChanges.delete(fieldStr);
                 const fieldNamespace = `${namespace}/${fieldStr}`;
                 events.emit(namespace, Remove(fieldNamespace));
-            })
+            }),
         );
         return true;
     },

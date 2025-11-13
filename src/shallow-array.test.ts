@@ -24,7 +24,7 @@ test('ShallowArrayState add field', (t) => {
     events.assertEvents(
         t,
         ['/numbersArray', { op: 'add', path: '/numbersArray/0', value: 0 }],
-        ['/numbersArray', { op: 'add', path: '/numbersArray/1', value: 1 }]
+        ['/numbersArray', { op: 'add', path: '/numbersArray/1', value: 1 }],
     );
 });
 
@@ -44,7 +44,7 @@ test('ShallowArrayState change field', (t) => {
     events.assertEvents(
         t,
         ['/numbersArray', { op: 'add', path: '/numbersArray/0', value: 0 }],
-        ['/numbersArray/0', { op: 'replace', path: '/numbersArray/0', value: 1 }]
+        ['/numbersArray/0', { op: 'replace', path: '/numbersArray/0', value: 1 }],
     );
 });
 
@@ -61,7 +61,7 @@ test('ShallowArrayState change array field with new state', (t) => {
     events.assertEvents(
         t,
         ['/numbersArray', { op: 'replace', path: '/numbersArray', value: fixture.room.state.numbersArray }],
-        ['/numbersArray', { op: 'add', path: '/numbersArray/0', value: 0 }]
+        ['/numbersArray', { op: 'add', path: '/numbersArray/0', value: 0 }],
     );
 });
 
@@ -79,7 +79,7 @@ test('ShallowArrayState change array field with previous state', (t) => {
     events.assertEvents(
         t,
         ['/numbersArray', { op: 'remove', path: '/numbersArray/0' }],
-        ['/numbersArray', { op: 'replace', path: '/numbersArray', value: fixture.room.state.numbersArray }]
+        ['/numbersArray', { op: 'replace', path: '/numbersArray', value: fixture.room.state.numbersArray }],
     );
 });
 
@@ -98,7 +98,7 @@ test('ShallowArrayState change array field with same (previous and existing) sta
         t,
         ['/numbersArray', { op: 'remove', path: '/numbersArray/0' }],
         ['/numbersArray', { op: 'replace', path: '/numbersArray', value: fixture.room.state.numbersArray }],
-        ['/numbersArray', { op: 'add', path: '/numbersArray/0', value: 0 }]
+        ['/numbersArray', { op: 'add', path: '/numbersArray/0', value: 0 }],
     );
 });
 
@@ -123,6 +123,6 @@ test('ShallowArrayState remove field', (t) => {
     events.assertEvents(
         t,
         ['/numbersArray', { op: 'remove', path: '/numbersArray/1' }],
-        ['/numbersArray', { op: 'remove', path: '/numbersArray/0' }]
+        ['/numbersArray', { op: 'remove', path: '/numbersArray/0' }],
     );
 });

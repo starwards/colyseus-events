@@ -29,8 +29,8 @@
         }
     },
     "peerDependencies": {
-        "@colyseus/schema": "^3.x",
-        "colyseus.js": ">=^0.15"
+        "@colyseus/schema": "^3.0.0",
+        "colyseus.js": ">=0.15.0"
     },
     "devDependencies": {
         "@colyseus/schema": "^3.0.68",

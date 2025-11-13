@@ -5,7 +5,7 @@ import { DeDupeEmitter } from './de-dupe-wrapper';
 import { Decoder } from '@colyseus/schema';
 import { SymbolWeakSet } from './weak-set';
 import { coreVisitors } from './core-visitors';
-import { getDecoderStateCallbacks } from './fork/getDecoderStateCallbacks';
+import { getDecoderStateCallbacks } from './spoon/get-decoder-state-callbacks';
 
 /* eslint-enable sort-imports */
 

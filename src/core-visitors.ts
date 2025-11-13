@@ -2,7 +2,7 @@ import { Add, Colyseus, Container, Events, Remove, Replace, Traverse, Visitor } 
 import { ArraySchema, MapSchema, Schema, type SchemaCallbackProxy } from '@colyseus/schema';
 
 import { CallbacksCleanup } from './destructors';
-import { getFieldsList } from './internals-extract';
+import { getFieldsList } from './spoon/internals-extract';
 
 export const handleSchema = Object.freeze({
     cache: new CallbacksCleanup(),

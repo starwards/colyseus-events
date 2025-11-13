@@ -11,7 +11,7 @@ export class ShallowState extends Schema {
 test('ShallowState add field', (t) => {
     t.plan(1);
     const fixture = new FakeClientServer(ShallowState);
-    const { events, clearCache } = wireEvents(fixture.client, new RecordedEvents());
+    const { events, clearCache } = wireEvents(fixture.room, new RecordedEvents());
     events.onClear(clearCache);
     fixture.server.foo = 1;
     fixture.sync();
@@ -21,7 +21,7 @@ test('ShallowState add field', (t) => {
 test('ShallowState change field', (t) => {
     t.plan(2);
     const fixture = new FakeClientServer(ShallowState);
-    const { events, clearCache } = wireEvents(fixture.client, new RecordedEvents());
+    const { events, clearCache } = wireEvents(fixture.room, new RecordedEvents());
     events.onClear(clearCache);
     fixture.server.foo = 1;
     fixture.sync();

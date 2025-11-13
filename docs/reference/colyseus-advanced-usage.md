@@ -1,0 +1,205 @@
+# Advanced Usage – Colyseus
+
+Since `@colyseus/schema` 3.0, experimental APIs are available allowing you to customize:
+
+- [Custom types and encoding](#custom-types-and-encoding)
+- [Change tracking](#change-tracking)
+- [Byte-level encoding](#byte-level-encoding)
+- [Byte-level decoding](#byte-level-decoding)
+- [Encoding non-`Schema` structures](#encoding-non-schema-structures)
+
+## Custom types and encoding
+
+You can define custom types to encode and decode your data structures.
+
+```typescript
+import { Schema, defineCustomTypes } from "@colyseus/schema";
+import { TextDecoder, TextEncoder } from "util";
+
+const _encoder = new TextEncoder();
+const _decoder = new TextDecoder();
+
+const customType = defineCustomTypes({
+        cstring: {
+            encode: (bytes, value, it) => {
+                value ??= "";
+                value += "\x00";
+                if (bytes instanceof Uint8Array) {
+                    it.offset += _encoder.encodeInto(value, bytes.subarray(it.offset)).written;
+                } else {
+                    const encoded = _encoder.encode(value);
+                    const len = encoded.length;
+                    for (let i = 0; i < len; ++i) bytes[it.offset++] = encoded[i]; // could probably also figure out if bytes has .set
+                }
+            },
+            decode: (bytes, it) => {
+                // should short circuit if buffer length can't be determined for some reason so we don't just infinitely loop
+                const len = (bytes as Buffer | ArrayBuffer).byteLength ?? (bytes as number[]).length;
+                if (len === undefined) throw TypeError("Unable to determine length of 'BufferLike' " + bytes.toString());
+                let start = it.offset;
+                while (it.offset < len && bytes[it.offset++] !== 0x00) { }; // nop, fast search for terminator
+                return _decoder.decode(new Uint8Array((bytes as Buffer | Uint8Array)?.subarray?.(start, it.offset - 1) ?? bytes.slice(start, it.offset - 1))); // ignore terminator
+            }
+        },
+});
+
+class MyState extends Schema {
+    @customType("cstring") message: string;
+}
+```
+
+See [CustomPrimitiveTypes.test.ts](https://github.com/colyseus/schema/blob/master/test/CustomPrimitiveTypes.test.ts) for more examples, which includes:
+
+| Type | Description | Limitation | Size (Bytes) |
+|------|-------------|------------|--------------|
+| `"varInt"` | signed variable-length encoded integer (`number` type) | -2147483648 to 2147483647 (safely) | 1 - 8 (depending on bits used) |
+| `"varUint"` | unsigned variable-length encoded integer (`number` type) | 0 to 4294967296 (safely) | 1 - 8 (depending on bits used) |
+| `"varBigInt"` | signed variable-length encoded integer (`bigint` type) | limitations based on platforms bigint implementation | 1 - ? (depending on the bits used) |
+| `"varBigUint"` | unsigned variable-length encoded integer (`bigint` type) | limitations based on platforms bigint implementation | 1 - ? (depending on the bits used) |
+| `"varFloat32"` | single-precision variable-length encoded floating-point number | `-3.40282347e+38` to `3.40282347e+38` | 2 - 6 (depending on bits used) |
+| `"varFloat64"` | double-precision variable-length encoded floating-point number | `-1.7976931348623157e+308` to `1.7976931348623157e+308` | 2 - 10 (depending on the bits used) |
+
+## Change Tracking
+
+The `$track` method is called whenever a `@type()`'d attribute gets mutated. It is used to track which properties must be encoded.
+
+```typescript
+// Vec3.ts
+import { $track, Schema } from "@colyseus/schema";
+
+class Vec3 extends Schema {
+    x: number;
+    y: number;
+    z: number;
+}
+
+Vec3[$track] = (changeTree: ChangeTree, index: number, operation: OPERATION = OPERATION.ADD) {
+    changeTree.change(index, operation);
+}
+```
+
+See [`ChangeTree`](https://github.com/colyseus/schema/blob/f755b94c5e618cfd6cdf2182199ec87b68fdae47/src/encoder/ChangeTree.ts) for more information.
+
+## Byte-level encoding
+
+At the `$encoder` method call, you may customize how a particular structure gets encoded into the buffer that is sent over the wire for the client.
+
+```typescript
+// Vec3.ts
+import { $encoder, Schema } from "@colyseus/schema";
+
+class Vec3 extends Schema {
+    x: number;
+    y: number;
+    z: number;
+}
+
+Vec[$encoder] = function (encoder, buffer, changeTree, index, operation, it, isEncodeAll, hasView) {
+    //
+    // encode x / y / z into a single byte
+    // (this limits for values ranging from 0 to 7 for x, y, and z.)
+    //
+    buffer[it.offset++] = (x << 6) | (y << 3) | z;
+}
+```
+
+See [`EncodeOperation`](https://github.com/colyseus/schema/blob/f755b94c5e618cfd6cdf2182199ec87b68fdae47/src/encoder/EncodeOperation.ts#L16-L25) method signature for full list of arguments.
+
+## Byte-level decoding
+
+At the `$decoder` method call, you may customize how a particular structure gets decoded, and how to interact with the callback system.
+
+```typescript
+// Vec3.ts
+import { $decoder, Schema } from "@colyseus/schema";
+
+class Vec3 extends Schema {
+    x: number;
+    y: number;
+    z: number;
+}
+
+Vec[$decoder] = function (decoder, bytes, it, ref, allChanges) {
+    //
+    // decode x / y / z from a single byte
+    // (values can only range from 0 to 7)
+    //
+    const byte = bytes[it.offset++];
+
+    ref.x = (byte >> 6) & 0x07;
+    ref.y = (byte >> 3) & 0x07;
+    ref.z = byte & 0x07;
+
+    //
+    // (optional) add change to list of changes, for callback handling
+    //
+    allChanges.push({
+        ref: ref,
+        refId: decoder.root.refIds.get(ref),
+        op: OPERATION.REPLACE,
+        field: "x",
+        value: ref.x,
+        previousValue: undefined,
+    });
+
+    allChanges.push({
+        ref: ref,
+        refId: decoder.root.refIds.get(ref),
+        op: OPERATION.REPLACE,
+        field: "y",
+        value: ref.y,
+        previousValue: undefined,
+    });
+
+    allChanges.push({
+        ref: ref,
+        refId: decoder.root.refIds.get(ref),
+        op: OPERATION.REPLACE,
+        field: "z",
+        value: ref.z,
+        previousValue: undefined,
+    });
+}
+```
+
+See [`DecodeOperation`](https://github.com/colyseus/schema/blob/f755b94c5e618cfd6cdf2182199ec87b68fdae47/src/decoder/DecodeOperation.ts#L28-L34) method signature for full list of arguments.
+
+## Encoding non-`Schema` structures
+
+In order to encode 3rd party structures, there are 2 steps to take:
+
+1. Use `Metadata.setFields()` to define the properties to be encoded.
+2. Initialize each instance with `Schema.initialize()` as soon as the 3rd party structure has been instantiated.
+
+⚠️ **Possible conflicts with 3rd party libraries**
+
+- `Schema.initialize()` is going to assign a property descriptor per property defined by `Metadata.setFields()`.
+- If the 3rd party library you use also defines their own property descriptors (or use getters/setters for such properties), synchronization will not work as expected.
+
+```typescript
+// Vec3.ts
+import { Schema, Metadata } from "@colyseus/schema";
+
+// the 3rd party structure...
+class Vec3 {
+    x: number;
+    y: number;
+    z: number;
+}
+
+// define how to encode the properties
+Metadata.setFields(Vec3, {
+    x: "number",
+    y: "number",
+    z: "number",
+});
+
+// initialize it!
+const vec3 = new Vec3();
+Schema.initialize(vec3);
+```
+
+---
+
+*Source: https://docs.colyseus.io/state/advanced-usage*
+*Last updated on January 23, 2025*

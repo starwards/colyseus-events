@@ -15,7 +15,7 @@ export class ChildState extends ParentState {
 test('ParentState add field', (t) => {
     t.plan(1);
     const fixture = new FakeClientServer(ChildState);
-    const { events, clearCache } = wireEvents(fixture.client, new RecordedEvents());
+    const { events, clearCache } = wireEvents(fixture.room, new RecordedEvents());
     events.onClear(clearCache);
     fixture.server.parent = 1;
     fixture.sync();
@@ -25,7 +25,7 @@ test('ParentState add field', (t) => {
 test('ParentState change field', (t) => {
     t.plan(2);
     const fixture = new FakeClientServer(ChildState);
-    const { events, clearCache } = wireEvents(fixture.client, new RecordedEvents());
+    const { events, clearCache } = wireEvents(fixture.room, new RecordedEvents());
     events.onClear(clearCache);
     fixture.server.parent = 1;
     fixture.sync();
@@ -38,7 +38,7 @@ test('ParentState change field', (t) => {
 test('ChildState add field', (t) => {
     t.plan(1);
     const fixture = new FakeClientServer(ChildState);
-    const { events, clearCache } = wireEvents(fixture.client, new RecordedEvents());
+    const { events, clearCache } = wireEvents(fixture.room, new RecordedEvents());
     events.onClear(clearCache);
     fixture.server.child = 1;
     fixture.sync();
@@ -48,7 +48,7 @@ test('ChildState add field', (t) => {
 test('ChildState change field', (t) => {
     t.plan(2);
     const fixture = new FakeClientServer(ChildState);
-    const { events, clearCache } = wireEvents(fixture.client, new RecordedEvents());
+    const { events, clearCache } = wireEvents(fixture.room, new RecordedEvents());
     events.onClear(clearCache);
     fixture.server.child = 1;
     fixture.sync();

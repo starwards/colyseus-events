@@ -3,14 +3,19 @@
 Generate json-patch events from [colyseus](https://www.colyseus.io/) state.
 ```typescript
 import { wireEvents } from 'colyseus-events';
+import { getStateCallbacks } from 'colyseus.js';
 const room: Room<GameState> = await client.joinOrCreate("game");
-const { events } = wireEvents(room.state, new EventEmitter());
+const { events } = wireEvents(room, new EventEmitter());
 // `events` will emit json-patch events whenever the room state changes
 ```
 
-## version support 
+## Version Support
 
-Due to breaking API changes in Colyseus, this version only supports Colyseus 0.15 and above (@colyseus/schema 2.x)
+**v4.0+**: Requires @colyseus/schema 3.x (Colyseus 0.15/0.16+)
+
+**Breaking change from v3.x**: The API now accepts the room object instead of just the `room.state` object. This change is required for @colyseus/schema 3.x compatibility.
+
+For @colyseus/schema 2.x support, use colyseus-events@3.x
 
 ## Pending support
 
@@ -21,11 +26,12 @@ The schema types new to Colyseus 0.14 (`CollectionSchema` and `SetSchema`) are n
 
 ## How to use
 ### wireEvents
-Import `wireEvents` and call it once when connecting to a room on the client side: 
+Import `wireEvents` and call it once when connecting to a room on the client side:
 ```typescript
 import { wireEvents } from 'colyseus-events';
+import { getStateCallbacks } from 'colyseus.js';
 const room: Room<GameState> = await client.joinOrCreate("game");
-const { events } = wireEvents(room.state, new EventEmitter());
+const { events } = wireEvents(room, getStateCallbacks(room), new EventEmitter());
 // `events` will emit json-patch events whenever the room state changes
 ```
 then you can wire listeners to `events` using the [JSON-pointer](https://github.com/janl/node-jsonpointer) of target field as event name.
@@ -34,12 +40,13 @@ then you can wire listeners to `events` using the [JSON-pointer](https://github.
 To change the behavior for parts or all of your state, use `customWireEvents` to produce your own version of `wireEvents`:
 ```typescript
 import { customWireEvents, coreVisitors} from 'colyseus-events';
+import { getStateCallbacks } from 'colyseus.js';
 const special = {
-    visit: (traverse: Traverse, state: Container, events: Events, jsonPath: string): boolean => { /* see Visitor implementation below*/},
+    visit: (traverse: Traverse, state: Container, events: Events, jsonPath: string, callbackProxy): boolean => { /* see Visitor implementation below*/},
 };
 const wireEvents = customWireEvents([ special, ...coreVisitors]);
 const room: Room<GameState> = await client.joinOrCreate("game");
-const { events } = wireEvents(room.state, new EventEmitter());
+const { events } = wireEvents(room, getStateCallbacks(room), new EventEmitter());
 // `events` will emit json-patch events whenever the room state changes
 ```
 `customWireEvents` accepts a single argument, a collection of `Visitor` objects, and returns afunctyion compatible with the default `wireEvents`. In fact, the default `wireEvents` function is itself the result `customWireEvents` when using `coreVisitors` as the argument. it is defined in [wire-events.ts](src/wire-events.ts#L42) by the following line:
@@ -48,27 +55,32 @@ export const wireEvents = customWireEvents(coreVisitors);
 ```
 The order of the visitors is crucial: they are executed as a fallback chain: the first visitor to return `true` will stop the chain and prevent later visitors from wiring the same state. So be sure to order them by specificity: the more specific handlers should first check for their use case before the generic visitors, and `coreVisitors` should be the last visitors.
 #### Visitor implementation
-A visitor must implement a single method, `visit`. This method should:
+A visitor must implement a single method, `visit(traverse, state, events, namespace, callbackProxy)`. This method should:
 1. Check if it is going to handle the state object, and return `false` if not.
-2. Call the traverse function for each child member of the state.
-3. Hook on the state's [Client-side Callbacks](https://docs.colyseus.io/state/schema-callbacks/#state-sync-client-side-callbacks). Make sure to only hook once per state object. This may become trickey with Proxies, and 'stickey' callbacks.
-4. For every new value in each child member of the state, call the traverse function and emit the events using the event emitter.
+2. Use the callback proxy to register listeners on the state object.
+3. Hook callbacks using the proxy: `$(state).onAdd()`, `$(state).listen()`, etc.
+4. For every new value in callbacks, call the traverse function and emit events.
+5. Return `true` to stop the visitor chain.
+
 Examples can be found in [core-visitors.ts](src/core-visitors.ts). Here is a brief of the visitor that handles `MapSchema`:
 ```typescript
 {
-    
-    visit: (traverse: Traverse, state: Container, events: Events, namespace: string) => {
+    visit: (traverse: Traverse, state: Container, events: Events, namespace: string, callbackProxy) => {
             // Check if it is going to handle the state object, and return `false` if not.
             if (!(state instanceof MapSchema)) {
                 return false;
             }
-            // Hook on new elements
-            state.onAdd = (value: Colyseus, field) => {
-                const fieldNamespace = `${namespace}/${field}`; // path to the new element
-                events.emit(namespace, Add(fieldNamespace, value)); // emit the add event
-                traverse(value, events, fieldNamespace); // call the traverse function on the new value
-            };
-            
+            // Get callback proxy for this state object
+            const $ = callbackProxy(state);
+
+            // Hook on new elements using the proxy
+            $.onAdd((value: unknown, field: unknown) => {
+                const fieldStr = field as string;
+                const fieldNamespace = `${namespace}/${fieldStr}`; // path to the new element
+                events.emit(namespace, Add(fieldNamespace, value as Colyseus)); // emit the add event
+                traverse(value as Colyseus, events, fieldNamespace, callbackProxy); // call the traverse function on the new value
+            });
+
             ...
 
             // finally return true. this will break the visitors fallback chain and complete the wiring for this object.
@@ -76,7 +88,6 @@ Examples can be found in [core-visitors.ts](src/core-visitors.ts). Here is a bri
         }
 }
 ```
-In addition to the code above, there ais also code to handle duplicate events and keeping only one registration per state object.
 ## Examples
 
 For example, given the room state:

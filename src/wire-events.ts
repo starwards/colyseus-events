@@ -3,7 +3,7 @@ import { ColRoom, Colyseus, Events, Visitor, isPrimitive } from './types';
 
 import { Decoder } from '@colyseus/schema';
 import { coreVisitors } from './core-visitors';
-import { getDecoderStateCallbacks } from './spoon/get-decoder-state-callbacks';
+import { createManagedCallbackProxy } from './managed-callback-proxy';
 
 /* eslint-enable sort-imports */
 
@@ -30,8 +30,8 @@ export function customWireEvents(visitors: Iterable<Visitor>) {
         const state = room.state;
         const wiredContainers = new Set<number>();
 
-        // Get callback proxy from room
-        const callbackProxy = getDecoderStateCallbacks(decoder);
+        // Get callback proxy from room and wrap it with managed version
+        const callbackProxy = createManagedCallbackProxy(decoder);
 
         function recursive(node: Colyseus, events: Events, namespace: string) {
             if (isPrimitive(node)) return;

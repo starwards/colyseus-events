@@ -26,7 +26,7 @@ import { isPrimitive } from '../types';
  * ```
  */
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
-export type SchemaCallbackProxy = <T>(instance: T) => CallbackProxy<T> & { refId: number };
+export type SchemaCallbackProxy = <T>(instance: T) => CallbackProxy<T>;
 
 export type CallbackProxy<T> = unknown extends T // is "any"?
     ? SchemaCallback<T> & CollectionCallback<any, any>
@@ -225,7 +225,6 @@ export function getDecoderStateCallbacks(decoder: Decoder): SchemaCallbackProxy 
     };
 
     function getProxy(metadataOrType: Metadata | DefinitionType | undefined, context: CallContext) {
-        const refId = $root.refIds.get(context.instance);
         let metadata: Metadata = context.instance?.constructor[Symbol.metadata] || metadataOrType;
         let isCollection =
             (context.instance && typeof context.instance['forEach'] === 'function') ||
@@ -258,7 +257,6 @@ export function getDecoderStateCallbacks(decoder: Decoder): SchemaCallbackProxy 
              */
             return new Proxy(
                 {
-                    refId: refId!,
                     listen: function listen(
                         prop: string,
                         callback: (value: any, previousValue: any) => void,
@@ -403,7 +401,6 @@ export function getDecoderStateCallbacks(decoder: Decoder): SchemaCallbackProxy 
 
             return new Proxy(
                 {
-                    refId: refId!,
                     onAdd: function (callback: (value: any, key: any) => void, immediate: boolean = true) {
                         //
                         // https://github.com/colyseus/schema/issues/147

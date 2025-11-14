@@ -1,5 +1,4 @@
-import { Decoder, Ref } from '@colyseus/schema';
-import { SchemaCallbackProxy, getDecoderStateCallbacks } from './spoon/get-decoder-state-callbacks';
+import { Decoder, Ref, SchemaCallbackProxy, getDecoderStateCallbacks } from '@colyseus/schema';
 
 import { CallbacksCleanup } from './destructors';
 import { isContainer } from './types';

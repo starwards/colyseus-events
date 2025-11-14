@@ -39,8 +39,7 @@ test('custom visitor yields control gracefully', (t) => {
     t.plan(2);
 
     const fixture = new FakeClientServer(GameState);
-    const { events, clearCache } = wireEvents(fixture.room, new RecordedEvents());
-    events.onClear(clearCache);
+    const { events } = wireEvents(fixture.room, new RecordedEvents());
     fixture.sync();
     events.clear();
 
@@ -57,8 +56,7 @@ test('custom visitor changes events', (t) => {
     t.plan(2);
 
     const fixture = new FakeClientServer(GameState);
-    const { events, clearCache } = wireEvents(fixture.room, new RecordedEvents());
-    events.onClear(clearCache);
+    const { events } = wireEvents(fixture.room, new RecordedEvents());
     fixture.sync();
     events.clear();
 

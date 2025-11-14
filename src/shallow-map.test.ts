@@ -11,8 +11,7 @@ export class ShallowMapState extends Schema {
 test('ShallowMapState add field', (t) => {
     t.plan(1);
     const fixture = new FakeClientServer(ShallowMapState);
-    const { events, clearCache } = wireEvents(fixture.room, new RecordedEvents());
-    events.onClear(clearCache);
+    const { events } = wireEvents(fixture.room, new RecordedEvents());
     fixture.sync();
     events.clear();
 
@@ -31,8 +30,7 @@ test('ShallowMapState add field', (t) => {
 test('ShallowMapState change field', (t) => {
     t.plan(1);
     const fixture = new FakeClientServer(ShallowMapState);
-    const { events, clearCache } = wireEvents(fixture.room, new RecordedEvents());
-    events.onClear(clearCache);
+    const { events } = wireEvents(fixture.room, new RecordedEvents());
     fixture.sync();
     events.clear();
 
@@ -51,8 +49,7 @@ test('ShallowMapState change field', (t) => {
 test('ShallowMapState change map field with new state', (t) => {
     t.plan(1);
     const fixture = new FakeClientServer(ShallowMapState);
-    const { events, clearCache } = wireEvents(fixture.room, new RecordedEvents());
-    events.onClear(clearCache);
+    const { events } = wireEvents(fixture.room, new RecordedEvents());
     fixture.sync();
     events.clear();
 
@@ -69,8 +66,7 @@ test('ShallowMapState change map field with new state', (t) => {
 test('ShallowMapState change map field with previous state', (t) => {
     t.plan(1);
     const fixture = new FakeClientServer(ShallowMapState);
-    const { events, clearCache } = wireEvents(fixture.room, new RecordedEvents());
-    events.onClear(clearCache);
+    const { events } = wireEvents(fixture.room, new RecordedEvents());
     fixture.server.mapNumbers.set('1', 1);
     fixture.sync();
     events.clear();
@@ -88,8 +84,7 @@ test('ShallowMapState change map field with previous state', (t) => {
 test('ShallowMapState change map field with same (previous and existing) state', (t) => {
     t.plan(1);
     const fixture = new FakeClientServer(ShallowMapState);
-    const { events, clearCache } = wireEvents(fixture.room, new RecordedEvents());
-    events.onClear(clearCache);
+    const { events } = wireEvents(fixture.room, new RecordedEvents());
     fixture.server.mapNumbers.set('1', 1);
     fixture.sync();
     events.clear();
@@ -108,8 +103,7 @@ test('ShallowMapState change map field with same (previous and existing) state',
 test('ShallowMapState remove field', (t) => {
     t.plan(1);
     const fixture = new FakeClientServer(ShallowMapState);
-    const { events, clearCache } = wireEvents(fixture.room, new RecordedEvents());
-    events.onClear(clearCache);
+    const { events } = wireEvents(fixture.room, new RecordedEvents());
     fixture.server.mapNumbers.set('1', 1);
     fixture.server.mapNumbers.set('2', 2);
     fixture.sync();

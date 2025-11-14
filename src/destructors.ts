@@ -1,5 +1,3 @@
-import { Container } from './types';
-
 export type Destructor = () => unknown;
 export class Destructors {
     private destructors = new Set<Destructor>();
@@ -20,12 +18,12 @@ export class Destructors {
 }
 
 export class CallbacksCleanup {
-    private cacheByState = new WeakMap<Container, Destructors>();
+    private cacheByState = new Map<number, Destructors>();
 
-    resetDestructors(state: Container) {
-        const dByState = this.cacheByState.get(state);
+    resetDestructors(refId: number) {
+        const dByState = this.cacheByState.get(refId);
         const newD = dByState || new Destructors();
-        this.cacheByState.set(state, newD);
+        this.cacheByState.set(refId, newD);
         newD.cleanup();
         return newD;
     }

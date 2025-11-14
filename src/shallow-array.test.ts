@@ -11,8 +11,7 @@ export class ShallowArrayState extends Schema {
 test('ShallowArrayState add field', (t) => {
     t.plan(1);
     const fixture = new FakeClientServer(ShallowArrayState);
-    const { events, clearCache } = wireEvents(fixture.room, new RecordedEvents());
-    events.onClear(clearCache);
+    const { events } = wireEvents(fixture.room, new RecordedEvents());
     fixture.sync();
     events.clear();
 
@@ -31,8 +30,7 @@ test('ShallowArrayState add field', (t) => {
 test('ShallowArrayState change field', (t) => {
     t.plan(1);
     const fixture = new FakeClientServer(ShallowArrayState);
-    const { events, clearCache } = wireEvents(fixture.room, new RecordedEvents());
-    events.onClear(clearCache);
+    const { events } = wireEvents(fixture.room, new RecordedEvents());
     fixture.sync();
     events.clear();
 
@@ -51,8 +49,7 @@ test('ShallowArrayState change field', (t) => {
 test('ShallowArrayState change array field with new state', (t) => {
     t.plan(1);
     const fixture = new FakeClientServer(ShallowArrayState);
-    const { events, clearCache } = wireEvents(fixture.room, new RecordedEvents());
-    events.onClear(clearCache);
+    const { events } = wireEvents(fixture.room, new RecordedEvents());
     fixture.sync();
     events.clear();
 
@@ -68,8 +65,7 @@ test('ShallowArrayState change array field with new state', (t) => {
 test('ShallowArrayState change array field with previous state', (t) => {
     t.plan(1);
     const fixture = new FakeClientServer(ShallowArrayState);
-    const { events, clearCache } = wireEvents(fixture.room, new RecordedEvents());
-    events.onClear(clearCache);
+    const { events } = wireEvents(fixture.room, new RecordedEvents());
     fixture.server.numbersArray[0] = 0;
     fixture.sync();
     events.clear();
@@ -86,8 +82,7 @@ test('ShallowArrayState change array field with previous state', (t) => {
 test('ShallowArrayState change array field with same (previous and existing) state', (t) => {
     t.plan(1);
     const fixture = new FakeClientServer(ShallowArrayState);
-    const { events, clearCache } = wireEvents(fixture.room, new RecordedEvents());
-    events.onClear(clearCache);
+    const { events } = wireEvents(fixture.room, new RecordedEvents());
     fixture.server.numbersArray[0] = 0;
     fixture.sync();
     events.clear();
@@ -105,8 +100,7 @@ test('ShallowArrayState change array field with same (previous and existing) sta
 test('ShallowArrayState remove field', (t) => {
     t.plan(1);
     const fixture = new FakeClientServer(ShallowArrayState);
-    const { events, clearCache } = wireEvents(fixture.room, new RecordedEvents());
-    events.onClear(clearCache);
+    const { events } = wireEvents(fixture.room, new RecordedEvents());
     fixture.sync();
     events.clear();
 

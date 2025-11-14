@@ -1,7 +1,8 @@
-import { Event } from '.';
 // eslint-disable-next-line sort-imports
 import { Decoder, Encoder, Schema } from '@colyseus/schema';
 import { Room, getStateCallbacks } from 'colyseus.js';
+
+import { Event } from '.';
 import { Test } from 'tape';
 
 // Re-export getStateCallbacks for use in tests
@@ -30,7 +31,9 @@ export class FakeClientServer<T extends Schema> {
         this.encoder = new Encoder(this.server);
         this.decoder = new Decoder(client);
         this.decoder.decode(this.encoder.encodeAll());
-
+        // @ts-ignore hack
+        // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-member-access
+        this.decoder.state['_decoder'] = this.decoder;
         // Create a mock room object that has state and serializer for getStateCallbacks
         // getStateCallbacks() expects room.serializer.decoder to exist
         this.room = {

@@ -1,11 +1,9 @@
 /* eslint-disable sort-imports */
 import { ColRoom, Colyseus, Events, Visitor, isPrimitive } from './types';
 
-import { DeDupeEmitter } from './de-dupe-wrapper';
 import { Decoder } from '@colyseus/schema';
-import { SymbolWeakSet } from './weak-set';
 import { coreVisitors } from './core-visitors';
-import { getDecoderStateCallbacks } from './spoon/get-decoder-state-callbacks';
+import { createManagedCallbackProxy } from './managed-callback-proxy';
 
 /* eslint-enable sort-imports */
 
@@ -28,33 +26,27 @@ export function customWireEvents(visitors: Iterable<Visitor>) {
     return function wireEvents<T extends Events>(room: ColRoom<Colyseus>, userEvents: T, rootNamespace = '') {
         // @ts-expect-error accessing private Decoder
         const decoder = room.serializer['decoder'] as Decoder;
+        const refIds = decoder.root.refIds;
         const state = room.state;
-        const wiredContainers = new SymbolWeakSet();
+        const wiredContainers = new Set<number>();
 
-        // Get callback proxy from room
-        const callbackProxy = getDecoderStateCallbacks(decoder);
+        // Get callback proxy from room and wrap it with managed version
+        const callbackProxy = createManagedCallbackProxy(decoder);
 
         function recursive(node: Colyseus, events: Events, namespace: string) {
-            if (isPrimitive(node)) {
-                return events;
-            }
-            if (wiredContainers.has(node)) {
-                return events;
-            }
-            wiredContainers.add(node);
+            if (isPrimitive(node)) return;
+            const refId = refIds.get(node);
+            if (refId === undefined) throw new Error('Could not get refId for non-primitive node in wireEvents');
+            if (wiredContainers.has(refId)) return;
+            wiredContainers.add(refId);
             for (const ch of visitors) {
-                if (ch.visit(recursive, node, events, namespace, callbackProxy)) {
-                    return events;
-                }
+                if (ch.visit(recursive, node, events, namespace, callbackProxy)) return;
             }
-            return events;
         }
 
-        const dedupedEvents = new DeDupeEmitter(userEvents);
-
         // Initial wiring
-        recursive(state, dedupedEvents, rootNamespace);
-        return { events: userEvents, clearCache: dedupedEvents.clearCache };
+        recursive(state, userEvents, rootNamespace);
+        return { events: userEvents };
     };
 }
 

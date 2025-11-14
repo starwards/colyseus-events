@@ -7,8 +7,6 @@ import {
 import type { CollectionSchema, DefinitionType } from '@colyseus/schema';
 import { DataChange, Decoder, Metadata, OPERATION, Ref, Schema } from '@colyseus/schema';
 
-import { isPrimitive } from '../types';
-
 //
 // Discussion: https://github.com/colyseus/schema/issues/155
 //
@@ -26,7 +24,8 @@ import { isPrimitive } from '../types';
  * ```
  */
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
-export type SchemaCallbackProxy = <T>(instance: T) => CallbackProxy<T>;
+export type SchemaCallbackProxy<_RoomState> = <T>(instance: T) => CallbackProxy<T>;
+export type GetCallbackProxy = SchemaCallbackProxy<any>; // workaround for compatibility for < colyseus.js0.16.6. Remove me on next major release.
 
 export type CallbackProxy<T> = unknown extends T // is "any"?
     ? SchemaCallback<T> & CollectionCallback<any, any>
@@ -108,7 +107,7 @@ type CallContext = {
     onInstanceAvailable?: OnInstanceAvailableCallback;
 };
 
-export function getDecoderStateCallbacks(decoder: Decoder): SchemaCallbackProxy {
+export function getDecoderStateCallbacks<T extends Schema>(decoder: Decoder<T>): SchemaCallbackProxy<T> {
     const $root = decoder.root;
     const callbacks = $root.callbacks;
 
@@ -224,7 +223,7 @@ export function getDecoderStateCallbacks(decoder: Decoder): SchemaCallbackProxy 
         }
     };
 
-    function getProxy(metadataOrType: Metadata | DefinitionType | undefined, context: CallContext) {
+    function getProxy(metadataOrType: Metadata | DefinitionType, context: CallContext) {
         let metadata: Metadata = context.instance?.constructor[Symbol.metadata] || metadataOrType;
         let isCollection =
             (context.instance && typeof context.instance['forEach'] === 'function') ||
@@ -486,12 +485,9 @@ export function getDecoderStateCallbacks(decoder: Decoder): SchemaCallbackProxy 
         }
     }
 
-    function $<T>(instance: T) {
-        if (isPrimitive(instance)) {
-            throw new Error('Cannot create callback proxy for primitive values.');
-        }
+    function $<T>(instance: T): CallbackProxy<T> {
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        return getProxy(undefined, { instance }) as unknown as CallbackProxy<T> & { refId: number };
+        return getProxy(undefined as any, { instance }) as unknown as CallbackProxy<T>;
     }
 
     return $;

@@ -7,7 +7,7 @@ import { isContainer } from './types';
 /**
  * Enhanced SchemaCallbackProxy that automatically manages cache cleanup and destructor registration
  */
-export type ManagedCallbackProxy = SchemaCallbackProxy & {
+export type ManagedCallbackProxy = SchemaCallbackProxy<unknown> & {
     /**
      * Cleanup callbacks for a container value
      * @param value The container value to cleanup

@@ -64,7 +64,6 @@ wireEvents(room.state, getStateCallbacks(room), eventEmitter)
 - Exports `customWireEvents()` - for creating custom visitor configurations
 - No longer has runtime dependency on colyseus.js (callback proxy is user-provided)
 - Implements the recursive traversal that walks state tree
-- Uses `SymbolWeakSet` to track already-wired objects and prevent duplicate event registration
 
 **src/core-visitors.ts** - Built-in type handlers
 - `handleSchema` - Wires events for Schema objects using `$(schema).listen(field, callback)` via callback proxy
@@ -83,15 +82,6 @@ wireEvents(room.state, getStateCallbacks(room), eventEmitter)
 - `getFieldsList()` - Extracts field names from Schema using `Symbol.metadata` (v3 API)
 - Uses `@ts-ignore` to access internal metadata structure on constructor
 - Returns list of non-deprecated field names for a Schema instance
-
-**src/de-dupe-wrapper.ts** - Event deduplication
-- `DeDupeEmitter` - Wraps user's event emitter to prevent duplicate events
-- Caches last 100 events and compares before emitting
-- Prevents redundant events when Colyseus fires multiple callbacks for same change
-
-**src/weak-set.ts** - Tracking visited objects
-- `SymbolWeakSet` - WeakSet implementation that works with Colyseus proxies
-- Used to prevent re-wiring the same state object multiple times
 
 ### Visitor Chain and Extensibility
 

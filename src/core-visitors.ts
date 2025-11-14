@@ -1,23 +1,24 @@
-import { Add, Colyseus, Container, Events, Remove, Replace, Traverse, Visitor } from './types';
-import { ArraySchema, MapSchema, Schema, type SchemaCallbackProxy } from '@colyseus/schema';
+import { Add, Colyseus, Events, Remove, Replace, Traverse, Visitor, isContainer } from './types';
+import { ArraySchema, MapSchema, Schema } from '@colyseus/schema';
 
 import { CallbacksCleanup } from './destructors';
+import { SchemaCallbackProxy } from './spoon/get-decoder-state-callbacks';
 import { getFieldsList } from './spoon/internals-extract';
 
+const cache = new CallbacksCleanup();
 export const handleSchema = Object.freeze({
-    cache: new CallbacksCleanup(),
     visit<T extends Schema>(
         traverse: Traverse,
         state: T,
         events: Events,
         namespace: string,
-        callbackProxy: SchemaCallbackProxy<unknown>,
+        callbackProxy: SchemaCallbackProxy,
     ) {
         if (!(state instanceof Schema)) {
             return false;
         }
-        const destructors = this.cache.resetDestructors(state);
         const $ = callbackProxy(state);
+        const destructors = cache.resetDestructors($.refId);
         for (const field of getFieldsList(state)) {
             const fieldNamespace = `${namespace}/${field as string}`;
             const initialValue = state[field] as Colyseus;
@@ -31,13 +32,7 @@ export const handleSchema = Object.freeze({
                     field,
                     (value: unknown, previousValue: unknown) => {
                         if (value === previousValue) return;
-
-                        // Clean up old Schema on replacement
-                        const isPrevSchema = previousValue instanceof Schema;
-                        if (isPrevSchema) {
-                            this.cache.resetDestructors(previousValue as Container);
-                        }
-
+                        if (isContainer(previousValue)) cache.resetDestructors(callbackProxy(previousValue).refId);
                         events.emit(fieldNamespace, Replace(fieldNamespace, value as Colyseus));
                         traverse(value as Colyseus, events, fieldNamespace, callbackProxy);
                     },
@@ -50,30 +45,25 @@ export const handleSchema = Object.freeze({
 });
 
 export const handleArraySchema = Object.freeze({
-    cache: new CallbacksCleanup(),
     visit<T extends Colyseus>(
         traverse: Traverse,
         state: ArraySchema<T>,
         events: Events,
         namespace: string,
-        callbackProxy: SchemaCallbackProxy<unknown>,
+        callbackProxy: SchemaCallbackProxy,
     ) {
         if (!(state instanceof ArraySchema)) {
             return false;
         }
-        const destructors = this.cache.resetDestructors(state);
+        const $ = callbackProxy(state);
+        const destructors = cache.resetDestructors($.refId);
         const knownAdds = new Set<number>(); // Track indices seen in onAdd
         const knownChanges = new Set<number>(); // Track indices seen in onChange (to filter initial onChange)
-        const $ = callbackProxy(state);
         destructors.add(
             $.onAdd((value: unknown, field: unknown) => {
                 const fieldNum = field as number;
                 const fieldNamespace = `${namespace}/${fieldNum}`;
-                if (knownAdds.has(fieldNum)) {
-                    // onAdd firing again for same index = value changed
-                    events.emit(fieldNamespace, Replace(fieldNamespace, value as Colyseus));
-                } else {
-                    // First onAdd for this index = truly new element
+                if (!knownAdds.has(fieldNum)) {
                     knownAdds.add(fieldNum);
                     events.emit(namespace, Add(fieldNamespace, value as Colyseus));
                 }
@@ -95,7 +85,8 @@ export const handleArraySchema = Object.freeze({
             }),
         );
         destructors.add(
-            $.onRemove((_: unknown, field: unknown) => {
+            $.onRemove((item: unknown, field: unknown) => {
+                if (isContainer(item)) cache.resetDestructors(callbackProxy(item).refId);
                 const fieldNum = field as number;
                 knownAdds.delete(fieldNum);
                 knownChanges.delete(fieldNum);
@@ -108,32 +99,27 @@ export const handleArraySchema = Object.freeze({
 });
 
 export const handleMapSchema = Object.freeze({
-    cache: new CallbacksCleanup(),
     visit<T extends Colyseus>(
         traverse: Traverse,
         state: MapSchema<T>,
         events: Events,
         namespace: string,
-        callbackProxy: SchemaCallbackProxy<unknown>,
+        callbackProxy: SchemaCallbackProxy,
     ) {
         // Check if it is going to handle the state object, and return `false` if not.
         if (!(state instanceof MapSchema)) {
             return false;
         }
-        const destructors = this.cache.resetDestructors(state);
+        const $ = callbackProxy(state);
+        const destructors = cache.resetDestructors($.refId);
         const knownAdds = new Set<string>(); // Track keys seen in onAdd
         const knownChanges = new Set<string>(); // Track keys seen in onChange (to filter initial onChange)
-        const $ = callbackProxy(state);
         // Hook on new elements
         destructors.add(
             $.onAdd((value: unknown, field: unknown) => {
                 const fieldStr = field as string;
                 const fieldNamespace = `${namespace}/${fieldStr}`;
-                if (knownAdds.has(fieldStr)) {
-                    // onAdd firing again for same key = value changed
-                    events.emit(fieldNamespace, Replace(fieldNamespace, value as Colyseus));
-                } else {
-                    // First onAdd for this key = truly new element
+                if (!knownAdds.has(fieldStr)) {
                     knownAdds.add(fieldStr);
                     events.emit(namespace, Add(fieldNamespace, value as Colyseus));
                 }
@@ -156,7 +142,8 @@ export const handleMapSchema = Object.freeze({
             }),
         );
         destructors.add(
-            $.onRemove((_: unknown, field: unknown) => {
+            $.onRemove((item: unknown, field: unknown) => {
+                if (isContainer(item)) cache.resetDestructors(callbackProxy(item).refId);
                 const fieldStr = field as string;
                 knownAdds.delete(fieldStr);
                 knownChanges.delete(fieldStr);

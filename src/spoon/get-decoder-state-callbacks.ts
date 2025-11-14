@@ -7,6 +7,8 @@ import {
 import type { CollectionSchema, DefinitionType } from '@colyseus/schema';
 import { DataChange, Decoder, Metadata, OPERATION, Ref, Schema } from '@colyseus/schema';
 
+import { isPrimitive } from '../types';
+
 //
 // Discussion: https://github.com/colyseus/schema/issues/155
 //
@@ -24,8 +26,7 @@ import { DataChange, Decoder, Metadata, OPERATION, Ref, Schema } from '@colyseus
  * ```
  */
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
-export type SchemaCallbackProxy<_RoomState> = <T>(instance: T) => CallbackProxy<T>;
-export type GetCallbackProxy = SchemaCallbackProxy<any>; // workaround for compatibility for < colyseus.js0.16.6. Remove me on next major release.
+export type SchemaCallbackProxy = <T>(instance: T) => CallbackProxy<T> & { refId: number };
 
 export type CallbackProxy<T> = unknown extends T // is "any"?
     ? SchemaCallback<T> & CollectionCallback<any, any>
@@ -107,7 +108,7 @@ type CallContext = {
     onInstanceAvailable?: OnInstanceAvailableCallback;
 };
 
-export function getDecoderStateCallbacks<T extends Schema>(decoder: Decoder<T>): SchemaCallbackProxy<T> {
+export function getDecoderStateCallbacks(decoder: Decoder): SchemaCallbackProxy {
     const $root = decoder.root;
     const callbacks = $root.callbacks;
 
@@ -223,7 +224,8 @@ export function getDecoderStateCallbacks<T extends Schema>(decoder: Decoder<T>):
         }
     };
 
-    function getProxy(metadataOrType: Metadata | DefinitionType, context: CallContext) {
+    function getProxy(metadataOrType: Metadata | DefinitionType | undefined, context: CallContext) {
+        const refId = $root.refIds.get(context.instance);
         let metadata: Metadata = context.instance?.constructor[Symbol.metadata] || metadataOrType;
         let isCollection =
             (context.instance && typeof context.instance['forEach'] === 'function') ||
@@ -256,6 +258,7 @@ export function getDecoderStateCallbacks<T extends Schema>(decoder: Decoder<T>):
              */
             return new Proxy(
                 {
+                    refId: refId!,
                     listen: function listen(
                         prop: string,
                         callback: (value: any, previousValue: any) => void,
@@ -400,6 +403,7 @@ export function getDecoderStateCallbacks<T extends Schema>(decoder: Decoder<T>):
 
             return new Proxy(
                 {
+                    refId: refId!,
                     onAdd: function (callback: (value: any, key: any) => void, immediate: boolean = true) {
                         //
                         // https://github.com/colyseus/schema/issues/147
@@ -485,9 +489,12 @@ export function getDecoderStateCallbacks<T extends Schema>(decoder: Decoder<T>):
         }
     }
 
-    function $<T>(instance: T): CallbackProxy<T> {
+    function $<T>(instance: T) {
+        if (isPrimitive(instance)) {
+            throw new Error('Cannot create callback proxy for primitive values.');
+        }
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        return getProxy(undefined as any, { instance }) as unknown as CallbackProxy<T>;
+        return getProxy(undefined, { instance }) as unknown as CallbackProxy<T> & { refId: number };
     }
 
     return $;

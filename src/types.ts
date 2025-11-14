@@ -1,11 +1,6 @@
-import {
-    ArraySchema,
-    CollectionSchema,
-    MapSchema,
-    Schema,
-    type SchemaCallbackProxy,
-    SetSchema,
-} from '@colyseus/schema';
+import { ArraySchema, CollectionSchema, MapSchema, Schema, SetSchema } from '@colyseus/schema';
+
+import { SchemaCallbackProxy } from './spoon/get-decoder-state-callbacks';
 
 export type Primitive = number | string | boolean | null | undefined;
 export type Container = Schema | ArraySchema | MapSchema | CollectionSchema | SetSchema;
@@ -40,13 +35,6 @@ export type Replace = { op: 'replace'; path: string; value: Colyseus };
 export type Remove = { op: 'remove'; path: string };
 export type Event = Add | Remove | Replace;
 
-export function equalEvents(a: Event, b: Event): boolean {
-    if (a === b) return true;
-    if (a.op !== b.op || a.path !== b.path) return false;
-    if (a.op === 'remove') return true; // 'remove' events have no 'value'
-    return a.value === (b as Add | Replace).value;
-}
-
 export function Add(path: string, value: Colyseus): Add {
     return { op: 'add', path, value };
 }
@@ -61,7 +49,7 @@ export type Traverse<T extends Events = Events> = (
     state: Colyseus,
     events: T,
     jsonPath: string,
-    callbackProxy: SchemaCallbackProxy<unknown>,
+    callbackProxy: SchemaCallbackProxy,
 ) => unknown;
 
 /**
@@ -82,6 +70,6 @@ export type Visitor = {
         state: Container,
         events: Events,
         jsonPath: string,
-        callbackProxy: SchemaCallbackProxy<unknown>,
+        callbackProxy: SchemaCallbackProxy,
     ): boolean;
 };

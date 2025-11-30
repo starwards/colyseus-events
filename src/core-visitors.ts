@@ -1,5 +1,5 @@
 import { Add, Colyseus, Events, ManagedCallbackProxy, Remove, Replace, Traverse, Visitor } from './types';
-import { ArraySchema, MapSchema, Schema } from '@colyseus/schema';
+import { ArraySchema, CollectionSchema, MapSchema, Schema, SetSchema } from '@colyseus/schema';
 
 import { getFieldsList } from './spoon/internals-extract';
 export const handleSchema = Object.freeze({
@@ -134,6 +134,100 @@ export const handleMapSchema = Object.freeze({
     },
 });
 
-// TODO handle CollectionSchema and andSetSchema
+export const handleCollectionSchema = Object.freeze({
+    visit<T extends Colyseus>(
+        traverse: Traverse,
+        state: CollectionSchema<T>,
+        events: Events,
+        namespace: string,
+        callbackProxy: ManagedCallbackProxy,
+    ) {
+        if (!(state instanceof CollectionSchema)) {
+            return false;
+        }
+        const $ = callbackProxy(state);
+        const knownAdds = new Set<number>();
+        const knownChanges = new Set<number>();
+        $.onAdd((value: unknown, field: unknown) => {
+            const fieldNum = field as number;
+            const fieldNamespace = `${namespace}/${fieldNum}`;
+            if (!knownAdds.has(fieldNum)) {
+                knownAdds.add(fieldNum);
+                events.emit(namespace, Add(fieldNamespace, value as Colyseus));
+            }
+            traverse(value as Colyseus, events, fieldNamespace, callbackProxy);
+        }, false);
+        $.onChange((value: unknown, field: unknown) => {
+            const fieldNum = field as number;
+            if (knownChanges.has(fieldNum)) {
+                const fieldNamespace = `${namespace}/${fieldNum}`;
+                events.emit(fieldNamespace, Replace(fieldNamespace, value as Colyseus));
+                traverse(value as Colyseus, events, fieldNamespace, callbackProxy);
+            } else {
+                knownChanges.add(fieldNum);
+            }
+        });
+        $.onRemove((item: unknown, field: unknown) => {
+            callbackProxy.cleanup(item);
+            const fieldNum = field as number;
+            knownAdds.delete(fieldNum);
+            knownChanges.delete(fieldNum);
+            const fieldNamespace = `${namespace}/${fieldNum}`;
+            events.emit(namespace, Remove(fieldNamespace));
+        });
+        return true;
+    },
+});
 
-export const coreVisitors: ReadonlyArray<Visitor> = Object.freeze([handleSchema, handleArraySchema, handleMapSchema]);
+export const handleSetSchema = Object.freeze({
+    visit<T extends Colyseus>(
+        traverse: Traverse,
+        state: SetSchema<T>,
+        events: Events,
+        namespace: string,
+        callbackProxy: ManagedCallbackProxy,
+    ) {
+        if (!(state instanceof SetSchema)) {
+            return false;
+        }
+        const $ = callbackProxy(state);
+        const knownAdds = new Set<number>();
+        const knownChanges = new Set<number>();
+        $.onAdd((value: unknown, field: unknown) => {
+            const fieldNum = field as number;
+            const fieldNamespace = `${namespace}/${fieldNum}`;
+            if (!knownAdds.has(fieldNum)) {
+                knownAdds.add(fieldNum);
+                events.emit(namespace, Add(fieldNamespace, value as Colyseus));
+            }
+            traverse(value as Colyseus, events, fieldNamespace, callbackProxy);
+        }, false);
+        $.onChange((value: unknown, field: unknown) => {
+            const fieldNum = field as number;
+            if (knownChanges.has(fieldNum)) {
+                const fieldNamespace = `${namespace}/${fieldNum}`;
+                events.emit(fieldNamespace, Replace(fieldNamespace, value as Colyseus));
+                traverse(value as Colyseus, events, fieldNamespace, callbackProxy);
+            } else {
+                knownChanges.add(fieldNum);
+            }
+        });
+        $.onRemove((item: unknown, field: unknown) => {
+            callbackProxy.cleanup(item);
+            const fieldNum = field as number;
+            knownAdds.delete(fieldNum);
+            knownChanges.delete(fieldNum);
+            const fieldNamespace = `${namespace}/${fieldNum}`;
+            events.emit(namespace, Remove(fieldNamespace));
+        });
+        return true;
+    },
+});
+
+export const coreVisitors: ReadonlyArray<Visitor> = Object.freeze([
+    handleSchema,
+    handleArraySchema,
+    handleMapSchema,
+    handleCollectionSchema,
+    handleSetSchema,
+]);

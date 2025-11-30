@@ -17,10 +17,6 @@ const { events } = wireEvents(room, new EventEmitter());
 
 For @colyseus/schema 2.x support, use colyseus-events@3.x
 
-## Pending support
-
-The schema types new to Colyseus 0.14 (`CollectionSchema` and `SetSchema`) are not yet supported. please open an issue if you would like to see them supported.
-
 ## Installation
 `npm install colyseus-events --save`
 
@@ -101,10 +97,12 @@ export class GameState extends Schema {
     @type(Inner) public bar = new Inner();
     @type(['uint8']) public numbersArray = new ArraySchema<number>();
     @type({ map: 'uint8' }) public mapNumbers = new MapSchema<number>();
+    @type({ collection: 'uint8' }) public numbersCollection = new CollectionSchema<number>();
+    @type({ set: 'uint8' }) public numbersSet = new SetSchema<number>();
 }
 ```
 ### changing values
-when changing a value in Schema or collection (ArraySchema or MapSchema), an event will be emitted. The name of the event will be the [JSON-pointer](https://github.com/janl/node-jsonpointer) describing the location of the property. The event value will be a ["replace" JSON Patch](https://jsonpatch.com/#replace) corresponding with the change.
+when changing a value in Schema or collection (ArraySchema, MapSchema, CollectionSchema, or SetSchema), an event will be emitted. The name of the event will be the [JSON-pointer](https://github.com/janl/node-jsonpointer) describing the location of the property. The event value will be a ["replace" JSON Patch](https://jsonpatch.com/#replace) corresponding with the change.
 For example:
  - when the server executes: `room.state.foo = 1` an event named `'/foo'` will be emitted with value `{ op: 'replace', path: '/foo', value: 1 }`
  - when the server executes: `room.numbersArray[0] = 1` (assuming numbersArray had a previous value at index 0) an event named `'/numbersArray/1'` will be emitted with value `{ op: 'replace', path: '/numbersArray/1', value: 1 }`
@@ -114,12 +112,14 @@ For example:
 
 ...and so on.
 ### adding and removing elements in collections
-when adding or removing elements in a collection (ArraySchema or MapSchema), an event will be also be emitted. The name of the event will be the [JSON-pointer](https://github.com/janl/node-jsonpointer) describing the location of the **container**. The event value will be a ["add"](https://jsonpatch.com/#add) or ["remove"](https://jsonpatch.com/#remove) JSON Patch corresponding with the change. the `path` in the event value will point to the location of the **element** that was added or removed.
+when adding or removing elements in a collection (ArraySchema, MapSchema, CollectionSchema, or SetSchema), an event will be also be emitted. The name of the event will be the [JSON-pointer](https://github.com/janl/node-jsonpointer) describing the location of the **container**. The event value will be a ["add"](https://jsonpatch.com/#add) or ["remove"](https://jsonpatch.com/#remove) JSON Patch corresponding with the change. the `path` in the event value will point to the location of the **element** that was added or removed.
 For example:
  - when the server executes: `room.numbersArray.push(1)` an event named `'/numbersArray'` will be triggered with value `{ op: 'add', path: '/numbersArray/0', value: 1 }`
  - when the server executes: `room.numbersArray.pop()` an event named `'/numbersArray'` will be triggered with value `{ op: 'remove', path: '/numbersArray/0' }`
  - when the server executes: `room.mapNumbers.set('F00', 1)` an event named `'/mapNumbers'` will be triggered with value `{ op: 'add', path: '/mapNumbers/F00', value: 1 }`
  - when the server executes: `room.mapNumbers.delete('F00')` an event named `'/mapNumbers'` will be triggered with value `{ op: 'remove', path: '/mapNumbers/F00' }`
+ - when the server executes: `room.numbersCollection.add(1)` an event named `'/numbersCollection'` will be triggered with value `{ op: 'add', path: '/numbersCollection/0', value: 1 }`
+ - when the server executes: `room.numbersSet.add(1)` an event named `'/numbersSet'` will be triggered with value `{ op: 'add', path: '/numbersSet/0', value: 1 }`
 
 ...and so on.
 

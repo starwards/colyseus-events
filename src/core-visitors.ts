@@ -1,7 +1,9 @@
-import { Add, Colyseus, Events, ManagedCallbackProxy, Remove, Replace, Traverse, Visitor } from './types';
+import { Add, Colyseus, Events, Remove, Replace, Traverse, Visitor } from './types';
 import { ArraySchema, CollectionSchema, MapSchema, Schema, SetSchema } from '@colyseus/schema';
 
+import { ManagedCallbackProxy } from './managed-callback-proxy';
 import { getFieldsList } from './spoon/internals-extract';
+
 export const handleSchema = Object.freeze({
     visit<T extends Schema>(
         traverse: Traverse,
@@ -17,11 +19,8 @@ export const handleSchema = Object.freeze({
         for (const field of getFieldsList(state)) {
             const fieldNamespace = `${namespace}/${field as string}`;
             const initialValue = state[field] as Colyseus;
-
-            // Always traverse initial value to wire up nested callbacks
             traverse(initialValue, events, fieldNamespace, callbackProxy);
-
-            // @ts-expect-error - TypeScript has trouble with union types for overloaded .listen() method
+            // @ts-expect-error - trouble with union types for overloaded .listen() method
             $.listen(
                 field,
                 (value: unknown, previousValue: unknown) => {
@@ -49,8 +48,8 @@ export const handleArraySchema = Object.freeze({
             return false;
         }
         const $ = callbackProxy(state);
-        const knownAdds = new Set<number>(); // Track indices seen in onAdd
-        const knownChanges = new Set<number>(); // Track indices seen in onChange (to filter initial onChange)
+        const knownAdds = new Set<number>();
+        const knownChanges = new Set<number>();
         $.onAdd((value: unknown, field: unknown) => {
             const fieldNum = field as number;
             const fieldNamespace = `${namespace}/${fieldNum}`;
@@ -59,16 +58,14 @@ export const handleArraySchema = Object.freeze({
                 events.emit(namespace, Add(fieldNamespace, value as Colyseus));
             }
             traverse(value as Colyseus, events, fieldNamespace, callbackProxy);
-        }, false);
+        }, true);
         $.onChange((value: unknown, field: unknown) => {
             const fieldNum = field as number;
             if (knownChanges.has(fieldNum)) {
-                // We've seen onChange for this index before, so it's a real change
                 const fieldNamespace = `${namespace}/${fieldNum}`;
                 events.emit(fieldNamespace, Replace(fieldNamespace, value as Colyseus));
                 traverse(value as Colyseus, events, fieldNamespace, callbackProxy);
             } else {
-                // First onChange for this index - this fires after onAdd, so skip it
                 knownChanges.add(fieldNum);
             }
         });
@@ -92,14 +89,12 @@ export const handleMapSchema = Object.freeze({
         namespace: string,
         callbackProxy: ManagedCallbackProxy,
     ) {
-        // Check if it is going to handle the state object, and return `false` if not.
         if (!(state instanceof MapSchema)) {
             return false;
         }
         const $ = callbackProxy(state);
-        const knownAdds = new Set<string>(); // Track keys seen in onAdd
-        const knownChanges = new Set<string>(); // Track keys seen in onChange (to filter initial onChange)
-        // Hook on new elements
+        const knownAdds = new Set<string>();
+        const knownChanges = new Set<string>();
         $.onAdd((value: unknown, field: unknown) => {
             const fieldStr = field as string;
             const fieldNamespace = `${namespace}/${fieldStr}`;
@@ -108,17 +103,14 @@ export const handleMapSchema = Object.freeze({
                 events.emit(namespace, Add(fieldNamespace, value as Colyseus));
             }
             traverse(value as Colyseus, events, fieldNamespace, callbackProxy);
-        }, false);
-        // onChange returns void in v3, so we don't capture its return value
+        }, true);
         $.onChange((value: unknown, field: unknown) => {
             const fieldStr = field as string;
             if (knownChanges.has(fieldStr)) {
-                // We've seen onChange for this key before, so it's a real change
                 const fieldNamespace = `${namespace}/${fieldStr}`;
                 events.emit(fieldNamespace, Replace(fieldNamespace, value as Colyseus));
                 traverse(value as Colyseus, events, fieldNamespace, callbackProxy);
             } else {
-                // First onChange for this key - this fires after onAdd, so skip it
                 knownChanges.add(fieldStr);
             }
         });
@@ -156,7 +148,7 @@ export const handleCollectionSchema = Object.freeze({
                 events.emit(namespace, Add(fieldNamespace, value as Colyseus));
             }
             traverse(value as Colyseus, events, fieldNamespace, callbackProxy);
-        }, false);
+        }, true);
         $.onChange((value: unknown, field: unknown) => {
             const fieldNum = field as number;
             if (knownChanges.has(fieldNum)) {
@@ -201,7 +193,7 @@ export const handleSetSchema = Object.freeze({
                 events.emit(namespace, Add(fieldNamespace, value as Colyseus));
             }
             traverse(value as Colyseus, events, fieldNamespace, callbackProxy);
-        }, false);
+        }, true);
         $.onChange((value: unknown, field: unknown) => {
             const fieldNum = field as number;
             if (knownChanges.has(fieldNum)) {

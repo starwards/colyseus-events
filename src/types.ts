@@ -1,8 +1,7 @@
 import { ArraySchema, CollectionSchema, MapSchema, Schema, SetSchema } from '@colyseus/schema';
 
-import { ManagedCallbackProxy as ManagedCallbackProxyType } from './managed-callback-proxy';
+import { ManagedCallbackProxy } from './managed-callback-proxy';
 
-export type ManagedCallbackProxy = ManagedCallbackProxyType;
 export type Primitive = number | string | boolean | null | undefined;
 export type Container = Schema | ArraySchema | MapSchema | CollectionSchema | SetSchema;
 export type Colyseus = Primitive | Container;

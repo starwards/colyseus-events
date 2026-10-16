@@ -23,7 +23,8 @@
         "prepack": "npm run prettify && npm run build",
         "prettify": "prettier \"src/**/*.ts\" --write",
         "test:schema3": "ts-node node_modules/tape/bin/tape \"src/**/*.test.ts?(x)\" | tap-color | tap-set-exit",
-        "test:schema5": "ts-node -r ./scripts/use-schema5.js node_modules/tape/bin/tape \"src/**/*.test.ts?(x)\" | tap-color | tap-set-exit"
+        "test:schema5": "ts-node -r ./scripts/use-schema5.js node_modules/tape/bin/tape \"src/**/*.test.ts?(x)\" | tap-color | tap-set-exit",
+        "prepare": "npm run build"
     },
     "husky": {
         "hooks": {

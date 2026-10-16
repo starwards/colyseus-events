@@ -1,7 +1,7 @@
 /* eslint-disable @typescript-eslint/no-non-null-assertion */
-import { ArraySchema, MapSchema, Schema, type SchemaCallbackProxy, type } from '@colyseus/schema';
-import { Container, Events, Replace, Traverse, coreVisitors, customWireEvents } from '.';
-import { FakeClientServer, RecordedEvents } from './helper.test';
+import { ArraySchema, MapSchema, Schema, type } from '@colyseus/schema';
+import { Container, Event, Events, ManagedCallbackProxy, Replace, Traverse, coreVisitors, customWireEvents } from '.';
+import { FakeClientServer, RecordedEvents, SCHEMA_MAJOR } from './helper.test';
 
 import test from 'tape';
 
@@ -16,13 +16,7 @@ export class GameState extends Schema {
     @type({ map: 'uint8' }) public mapNumbers = new MapSchema<number>();
 }
 export const handleInner = Object.freeze({
-    visit: (
-        _: Traverse,
-        state: Container,
-        events: Events,
-        namespace: string,
-        callbackProxy: SchemaCallbackProxy<unknown>,
-    ) => {
+    visit: (_: Traverse, state: Container, events: Events, namespace: string, callbackProxy: ManagedCallbackProxy) => {
         if (!(state instanceof Inner)) {
             return false;
         }
@@ -45,7 +39,13 @@ test('custom visitor yields control gracefully', (t) => {
 
     fixture.server.bar = new Inner();
     fixture.sync();
-    events.assertEvents(t, ['/bar', { op: 'replace', path: '/bar', value: fixture.room.state.bar }]);
+    const replaced = Replace('/bar', fixture.room.state.bar);
+    // schema 5 decodes the new instance's fields after the parent's replace, so the visitor's onChange fires too
+    events.assertEvents(
+        t,
+        ['/bar', replaced],
+        ...(SCHEMA_MAJOR === 5 ? [['special', replaced] as [string, Event]] : []),
+    );
 
     fixture.server.mapNumbers.set('1', 1);
     fixture.sync();

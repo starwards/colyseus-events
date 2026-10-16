@@ -1,9 +1,5 @@
 /* eslint-disable @typescript-eslint/no-unsafe-enum-comparison, @typescript-eslint/no-unsafe-function-type, @typescript-eslint/no-explicit-any, @typescript-eslint/init-declarations, @typescript-eslint/no-shadow, no-prototype-builtins, @typescript-eslint/no-empty-function, @typescript-eslint/no-unsafe-argument, @typescript-eslint/no-unsafe-return, @typescript-eslint/no-unsafe-call, @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-unsafe-assignment, prefer-const, @typescript-eslint/no-inferrable-types, @typescript-eslint/no-unnecessary-type-assertion, @typescript-eslint/no-non-null-assertion */
-import {
-    Collection,
-    NonFunctionNonPrimitivePropNames,
-    NonFunctionPropNames,
-} from '@colyseus/schema/lib/types/HelperTypes';
+import { Collection, NonFunctionNonPrimitivePropNames, NonFunctionPropNames, getRefId } from './schema-compat';
 import type { CollectionSchema, DefinitionType } from '@colyseus/schema';
 import { DataChange, Decoder, Metadata, OPERATION, Ref, Schema } from '@colyseus/schema';
 
@@ -131,7 +127,7 @@ export function getDecoderStateCallbacks<T extends Schema>(decoder: Decoder<T>):
             // trigger onRemove on child structure.
             //
             if ((change.op & OPERATION.DELETE) === OPERATION.DELETE && change.previousValue instanceof Schema) {
-                const refId = $root.refIds.get(change.previousValue);
+                const refId = getRefId(decoder, change.previousValue);
                 if (refId !== undefined) {
                     const deleteCallbacks = callbacks[refId]?.[OPERATION.DELETE];
                     for (let i = deleteCallbacks?.length - 1; i >= 0; i--) {
@@ -144,7 +140,7 @@ export function getDecoderStateCallbacks<T extends Schema>(decoder: Decoder<T>):
                 const isDifferent =
                     typeof change.value !== 'object' ||
                     typeof change.previousValue !== 'object' ||
-                    $root.refIds.get(change.previousValue) !== $root.refIds.get(change.value);
+                    getRefId(decoder, change.previousValue) !== getRefId(decoder, change.value);
                 if (isDifferent) {
                     //
                     // Handle schema instance
@@ -162,7 +158,7 @@ export function getDecoderStateCallbacks<T extends Schema>(decoder: Decoder<T>):
                         }
                     }
 
-                    if ($callbacks.hasOwnProperty(change.field)) {
+                    if (change.field !== undefined && $callbacks.hasOwnProperty(change.field)) {
                         const fieldCallbacks = $callbacks[change.field];
                         for (let i = fieldCallbacks?.length - 1; i >= 0; i--) {
                             fieldCallbacks[i](change.value, change.previousValue);
@@ -178,7 +174,14 @@ export function getDecoderStateCallbacks<T extends Schema>(decoder: Decoder<T>):
                 // Handle collection of items
                 //
 
-                if ((change.op & OPERATION.DELETE) === OPERATION.DELETE) {
+                if (
+                    (change.op & OPERATION.DELETE_AND_ADD) === OPERATION.DELETE_AND_ADD &&
+                    change.previousValue !== undefined &&
+                    change.value !== undefined
+                ) {
+                    // colyseus-events: replacing an existing entry is a replace, not remove + add.
+                    // only the onChange callbacks (below) are triggered.
+                } else if ((change.op & OPERATION.DELETE) === OPERATION.DELETE) {
                     //
                     // FIXME: `previousValue` should always be available.
                     //
@@ -244,7 +247,7 @@ export function getDecoderStateCallbacks<T extends Schema>(decoder: Decoder<T>):
                 ) {
                     callback(context.instance[prop], undefined);
                 }
-                const refId = $root.refIds.get(ref);
+                const refId = getRefId(decoder, ref);
                 if (refId === undefined) {
                     throw new Error('refId not found');
                 }
@@ -283,7 +286,7 @@ export function getDecoderStateCallbacks<T extends Schema>(decoder: Decoder<T>):
                     },
 
                     onChange: function onChange(callback: () => void) {
-                        const refId = $root.refIds.get(context.instance);
+                        const refId = getRefId(decoder, context.instance);
                         if (refId === undefined) {
                             throw new Error('refId not found');
                         }
@@ -298,7 +301,7 @@ export function getDecoderStateCallbacks<T extends Schema>(decoder: Decoder<T>):
                         if (!properties) {
                             properties = Object.keys(metadata).map((index) => metadata[index as any as number].name);
                         }
-                        const refId = $root.refIds.get(context.instance);
+                        const refId = getRefId(decoder, context.instance);
                         if (refId === undefined) {
                             throw new Error('refId not found');
                         }
@@ -330,14 +333,14 @@ export function getDecoderStateCallbacks<T extends Schema>(decoder: Decoder<T>):
                                 );
 
                                 // has existing value
-                                if ($root.refIds.get(instance) !== undefined) {
+                                if (getRefId(decoder, instance) !== undefined) {
                                     callback(instance, true);
                                 }
                             };
 
                             return getProxy(metadataField.type, {
                                 // make sure refId is available, otherwise need to wait for the instance to be available.
-                                instance: $root.refIds.get(instance) && instance,
+                                instance: getRefId(decoder, instance) && instance,
                                 parentInstance: context.instance,
                                 onInstanceAvailable,
                             });
@@ -368,7 +371,7 @@ export function getDecoderStateCallbacks<T extends Schema>(decoder: Decoder<T>):
                     (ref as CollectionSchema).forEach((v, k) => callback(v, k));
                 }
 
-                const refId = $root.refIds.get(ref);
+                const refId = getRefId(decoder, ref);
                 if (refId === undefined) {
                     throw new Error('refId not found');
                 }
@@ -383,7 +386,7 @@ export function getDecoderStateCallbacks<T extends Schema>(decoder: Decoder<T>):
             };
 
             const onRemove = function (ref: Ref, callback: (value: any, key: any) => void) {
-                const refId = $root.refIds.get(ref);
+                const refId = getRefId(decoder, ref);
                 if (refId === undefined) {
                     throw new Error('refId not found');
                 }
@@ -391,7 +394,7 @@ export function getDecoderStateCallbacks<T extends Schema>(decoder: Decoder<T>):
             };
 
             const onChange = function (ref: Ref, callback: (value: any, key: any) => void) {
-                const refId = $root.refIds.get(ref);
+                const refId = getRefId(decoder, ref);
                 if (refId === undefined) {
                     throw new Error('refId not found');
                 }

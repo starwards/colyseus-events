@@ -2,6 +2,7 @@ import { Decoder, Ref } from '@colyseus/schema';
 import { SchemaCallbackProxy, getDecoderStateCallbacks } from './spoon/get-decoder-state-callbacks';
 
 import { CallbacksCleanup } from './destructors';
+import { getRefId } from './spoon/schema-compat';
 import { isContainer } from './types';
 
 /**
@@ -22,12 +23,11 @@ export type ManagedCallbackProxy = SchemaCallbackProxy<unknown> & {
  */
 export function createManagedCallbackProxy(decoder: Decoder): ManagedCallbackProxy {
     const callbackProxy = getDecoderStateCallbacks(decoder);
-    const refIds = decoder.root.refIds;
     const cache = new CallbacksCleanup();
 
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     function managed<T extends Ref>(instance: T): any {
-        const refId = refIds.get(instance);
+        const refId = getRefId(decoder, instance);
         if (refId === undefined) return;
         const $ = callbackProxy(instance);
         const destructors = cache.resetDestructors(refId);
@@ -61,7 +61,7 @@ export function createManagedCallbackProxy(decoder: Decoder): ManagedCallbackPro
 
     // Add cleanup method to the managed function
     (managed as ManagedCallbackProxy).cleanup = function (value: unknown) {
-        const refId = refIds.get(value as Ref);
+        const refId = getRefId(decoder, value);
         if (refId === undefined) return;
         if (isContainer(value)) {
             cache.resetDestructors(refId);

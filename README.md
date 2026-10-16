@@ -3,7 +3,6 @@
 Generate json-patch events from [colyseus](https://www.colyseus.io/) state.
 ```typescript
 import { wireEvents } from 'colyseus-events';
-import { getStateCallbacks } from 'colyseus.js';
 const room: Room<GameState> = await client.joinOrCreate("game");
 const { events } = wireEvents(room, new EventEmitter());
 // `events` will emit json-patch events whenever the room state changes
@@ -11,11 +10,15 @@ const { events } = wireEvents(room, new EventEmitter());
 
 ## Version Support
 
-**v4.0+**: Requires @colyseus/schema 3.x (Colyseus 0.15/0.16+)
+| colyseus-events | @colyseus/schema | client package | Colyseus server |
+|---|---|---|---|
+| 4.2+ | 3.x or 5.x | `colyseus.js` 0.16 / `@colyseus/sdk` 0.18 | 0.16 / 0.18 |
+| 4.0 – 4.1 | 3.x | `colyseus.js` 0.15 / 0.16 | 0.15 / 0.16 |
+| 3.x | 2.x | `colyseus.js` ≤ 0.15 | ≤ 0.15 |
 
-**Breaking change from v3.x**: The API now accepts the room object instead of just the `room.state` object. This change is required for @colyseus/schema 3.x compatibility.
+colyseus-events does not import the client package; it reads the decoder from `room.serializer`, so any client whose room exposes a `SchemaSerializer` works.
 
-For @colyseus/schema 2.x support, use colyseus-events@3.x
+**Breaking change from v3.x**: The API accepts the room object instead of just the `room.state` object. This change is required for @colyseus/schema 3.x compatibility.
 
 ## Installation
 `npm install colyseus-events --save`
@@ -25,9 +28,8 @@ For @colyseus/schema 2.x support, use colyseus-events@3.x
 Import `wireEvents` and call it once when connecting to a room on the client side:
 ```typescript
 import { wireEvents } from 'colyseus-events';
-import { getStateCallbacks } from 'colyseus.js';
 const room: Room<GameState> = await client.joinOrCreate("game");
-const { events } = wireEvents(room, getStateCallbacks(room), new EventEmitter());
+const { events } = wireEvents(room, new EventEmitter());
 // `events` will emit json-patch events whenever the room state changes
 ```
 then you can wire listeners to `events` using the [JSON-pointer](https://github.com/janl/node-jsonpointer) of target field as event name.
@@ -36,13 +38,12 @@ then you can wire listeners to `events` using the [JSON-pointer](https://github.
 To change the behavior for parts or all of your state, use `customWireEvents` to produce your own version of `wireEvents`:
 ```typescript
 import { customWireEvents, coreVisitors} from 'colyseus-events';
-import { getStateCallbacks } from 'colyseus.js';
 const special = {
     visit: (traverse: Traverse, state: Container, events: Events, jsonPath: string, callbackProxy): boolean => { /* see Visitor implementation below*/},
 };
 const wireEvents = customWireEvents([ special, ...coreVisitors]);
 const room: Room<GameState> = await client.joinOrCreate("game");
-const { events } = wireEvents(room, getStateCallbacks(room), new EventEmitter());
+const { events } = wireEvents(room, new EventEmitter());
 // `events` will emit json-patch events whenever the room state changes
 ```
 `customWireEvents` accepts a single argument, a collection of `Visitor` objects, and returns afunctyion compatible with the default `wireEvents`. In fact, the default `wireEvents` function is itself the result `customWireEvents` when using `coreVisitors` as the argument. it is defined in [wire-events.ts](src/wire-events.ts#L42) by the following line:

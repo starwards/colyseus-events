@@ -6,7 +6,9 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 colyseus-events is a TypeScript library that generates JSON-patch notification events from Colyseus state changes. It monitors Colyseus Schema objects (Schema, ArraySchema, MapSchema) and emits JSON-patch formatted events whenever state changes occur, using JSON-pointer paths as event names.
 
-**Version**: 4.0+ (requires @colyseus/schema 3.x and colyseus.js 0.15+ as peer dependency)
+**Version**: 4.2+ supports @colyseus/schema 3.x and 5.x (Colyseus 0.16 via colyseus.js, 0.18 via @colyseus/sdk). Version-specific internals live in `src/spoon/schema-compat.ts`. Tests run on both: `npm run test:schema3`, `npm run test:schema5` (redirects `@colyseus/schema` -> `schema5` and `colyseus.js` -> `sdk018` npm aliases via `scripts/use-schema5.js`).
+
+**API**: `wireEvents(room, events, namespace?)`. The room must expose `state` and `serializer.decoder`. Sections below that mention a `callbackProxy` argument / `getStateCallbacks` describe the internal managed proxy, not a user parameter.
 
 **Known Limitation in v4.0**: Collection field replacement events are not emitted. When a collection field (ArraySchema/MapSchema) is completely replaced with a new instance (e.g., `state.array = new ArraySchema()`), no "replace" event is emitted on the field path. Element changes within the collection ARE properly detected via onAdd/onChange/onRemove callbacks. This limitation exists because v3's `.listen()` callback fires for both field replacement AND element changes, making them indistinguishable.
 

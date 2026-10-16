@@ -1,4 +1,5 @@
 // eslint-disable-next-line sort-imports
+import * as schemaModule from '@colyseus/schema';
 import { Decoder, Encoder, Schema } from '@colyseus/schema';
 import { Room, getStateCallbacks } from 'colyseus.js';
 
@@ -7,6 +8,15 @@ import { Test } from 'tape';
 
 // Re-export getStateCallbacks for use in tests
 export { getStateCallbacks };
+
+/** major version of the @colyseus/schema under test (`$refId` was introduced in 4.x) */
+export const SCHEMA_MAJOR = '$refId' in schemaModule ? 5 : 3;
+
+/**
+ * @colyseus/schema 3.x fails to decode a Schema element added to a CollectionSchema/SetSchema
+ * after a discarded patch ("refId" not found). Upstream bug, unrelated to colyseus-events.
+ */
+export const SCHEMA3_COLLECTION_ADD_BUG = SCHEMA_MAJOR === 3 && 'upstream @colyseus/schema 3 decode bug';
 
 /**
  * manage the state we need for a simple test
@@ -49,12 +59,14 @@ export class FakeClientServer<T extends Schema> {
      */
     sync() {
         this.decoder.decode(this.encoder.encode());
+        // as the colyseus server does after every patch broadcast
+        this.encoder.discardChanges();
     }
 }
 
 export class RecordedEvents {
     private clearCb: null | (() => void) = null;
-    private eventsLog = new Array<[string, Event]>();
+    readonly eventsLog = new Array<[string, Event]>();
 
     emit(eventName: string, value: Event) {
         this.eventsLog.push([eventName, value]);

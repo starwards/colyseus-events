@@ -1,4 +1,4 @@
-import { NonFunctionPropNames } from '@colyseus/schema/lib/types/HelperTypes';
+import { NonFunctionPropNames } from './schema-compat';
 import { Schema } from '@colyseus/schema';
 
 export function getFieldsList<T extends Schema>(state: T): NonFunctionPropNames<T>[] {

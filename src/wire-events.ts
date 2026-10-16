@@ -4,6 +4,7 @@ import { ColRoom, Colyseus, Events, Visitor, isPrimitive } from './types';
 import { Decoder } from '@colyseus/schema';
 import { coreVisitors } from './core-visitors';
 import { createManagedCallbackProxy } from './managed-callback-proxy';
+import { getRefId } from './spoon/schema-compat';
 
 /* eslint-enable sort-imports */
 
@@ -26,7 +27,6 @@ export function customWireEvents(visitors: Iterable<Visitor>) {
     return function wireEvents<T extends Events>(room: ColRoom<Colyseus>, userEvents: T, rootNamespace = '') {
         // @ts-expect-error accessing private Decoder
         const decoder = room.serializer['decoder'] as Decoder;
-        const refIds = decoder.root.refIds;
         const state = room.state;
         const wiredContainers = new Set<number>();
 
@@ -35,7 +35,7 @@ export function customWireEvents(visitors: Iterable<Visitor>) {
 
         function recursive(node: Colyseus, events: Events, namespace: string) {
             if (isPrimitive(node)) return;
-            const refId = refIds.get(node);
+            const refId = getRefId(decoder, node);
             if (refId === undefined) throw new Error('Could not get refId for non-primitive node in wireEvents');
             if (wiredContainers.has(refId)) return;
             wiredContainers.add(refId);

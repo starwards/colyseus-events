@@ -1,5 +1,5 @@
 import { CollectionSchema, Schema, type } from '@colyseus/schema';
-import { FakeClientServer, RecordedEvents } from './helper.test';
+import { FakeClientServer, RecordedEvents, SCHEMA3_COLLECTION_ADD_BUG } from './helper.test';
 
 import test from 'tape';
 import { wireEvents } from '.';
@@ -13,7 +13,7 @@ class DeepCollectionState extends Schema {
     @type({ collection: ItemSchema }) public items = new CollectionSchema<ItemSchema>();
 }
 
-test('DeepCollectionState add Schema element to collection', (t) => {
+test('DeepCollectionState add Schema element to collection', { skip: SCHEMA3_COLLECTION_ADD_BUG }, (t) => {
     t.plan(1);
     const fixture = new FakeClientServer(DeepCollectionState);
     const { events } = wireEvents(fixture.room, new RecordedEvents());
@@ -47,7 +47,7 @@ test('DeepCollectionState change nested property within collection element', (t)
     events.assertEvents(t, ['/items/0/name', { op: 'replace', path: '/items/0/name', value: 'updated' }]);
 });
 
-test('DeepCollectionState add multiple Schema elements', (t) => {
+test('DeepCollectionState add multiple Schema elements', { skip: SCHEMA3_COLLECTION_ADD_BUG }, (t) => {
     t.plan(1);
     const fixture = new FakeClientServer(DeepCollectionState);
     const { events } = wireEvents(fixture.room, new RecordedEvents());

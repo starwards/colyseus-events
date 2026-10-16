@@ -13,15 +13,17 @@
         "!dist/**/*.test.js"
     ],
     "scripts": {
-        "typecheck": "tsc --noEmit",
+        "typecheck": "tsc --noEmit && tsc -p tsconfig.s5.json",
         "lint": "eslint . --ext .js,.ts,.tsx -f codeframe",
         "pretest": "npm run typecheck && npm run lint",
         "clean": "rimraf ./dist/",
         "prebuild": "npm run clean",
         "build": "tsc -p ./tsconfig.prod.json",
-        "test": "ts-node node_modules/tape/bin/tape \"src/**/*.test.ts?(x)\" | tap-color | tap-set-exit",
+        "test": "npm run test:schema3 && npm run test:schema5",
         "prepack": "npm run prettify && npm run build",
-        "prettify": "prettier \"src/**/*.ts\" --write"
+        "prettify": "prettier \"src/**/*.ts\" --write",
+        "test:schema3": "ts-node node_modules/tape/bin/tape \"src/**/*.test.ts?(x)\" | tap-color | tap-set-exit",
+        "test:schema5": "ts-node -r ./scripts/use-schema5.js node_modules/tape/bin/tape \"src/**/*.test.ts?(x)\" | tap-color | tap-set-exit"
     },
     "husky": {
         "hooks": {
@@ -29,11 +31,10 @@
         }
     },
     "peerDependencies": {
-        "@colyseus/schema": "^3.0.0",
-        "colyseus.js": ">=0.15.0"
+        "@colyseus/schema": "^3.0.0 || ^5.0.0"
     },
     "devDependencies": {
-        "@colyseus/schema": "^3.0.68",
+        "@colyseus/schema": "^3.0.76",
         "@types/tape": "^5.8.1",
         "@typescript-eslint/eslint-plugin": "^8.46.4",
         "@typescript-eslint/parser": "^8.46.4",
@@ -47,6 +48,8 @@
         "husky": "^8.0.1",
         "prettier": "^3.6.2",
         "rimraf": "^6.1.0",
+        "schema5": "npm:@colyseus/schema@^5.0.40",
+        "sdk018": "npm:@colyseus/sdk@^0.18.5",
         "source-map-support": "^0.5.21",
         "tap-color": "^1.2.0",
         "tap-set-exit": "1.1.1",
